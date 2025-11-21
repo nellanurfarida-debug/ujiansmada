@@ -1,878 +1,603 @@
-
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Ujian Online - SMAS Plus Darussalam</title>
-    
-    <!-- 1. Memuat Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2. Memuat Google Font (Inter) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>CBT SMA Plus Darussalam</title>
     <style>
-        /* Menerapkan font Inter sebagai default */
-        body { 
-            font-family: 'Inter', sans-serif; 
+        /* --- CSS RESET & VARIABLES --- */
+        :root {
+            --primary-color: #10b981; /* Emerald Green */
+            --primary-dark: #059669;
+            --text-color: #1f2937;
+            --bg-color: #f3f4f6;
+            --white: #ffffff;
+            --danger: #ef4444;
         }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden; /* Prevent scroll on body level */
+            user-select: none; /* Disable text selection globally */
+        }
+
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex-center { display: flex; justify-content: center; align-items: center; }
+        .full-screen { width: 100vw; height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        
+        button {
+            cursor: pointer;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; width: 100%; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            outline: none;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+
+        /* --- LOGIN PAGES --- */
+        .login-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .school-logo {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .login-footer {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .admin-link {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 0.7rem;
+            color: #ccc;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* --- ADMIN DASHBOARD --- */
+        .admin-dashboard {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 900px;
+            width: 95%;
+            margin: 20px auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-content {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 10px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 15px;
+        }
+
+        .monitor-panel {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+            height: 100%;
+        }
+
+        /* --- EXAM INTERFACE --- */
+        .exam-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .exam-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .timer-box {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            font-family: monospace;
+        }
+
+        .exam-body {
+            flex: 1;
+            background: #525659; /* PDF Viewer background style */
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        iframe.pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 5rem;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* --- ALERTS --- */
+        .block-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            z-index: 10000;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .block-icon { font-size: 5rem; color: var(--danger); margin-bottom: 20px; }
+
     </style>
-    
-    <!-- 3. Memuat Library React dan ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    
-    <!-- 4. Memuat Babel (untuk menerjemahkan JSX di browser) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-gray-100">
-    
-    <!-- 5. Ini adalah 'akar' tempat aplikasi React akan 'hidup' -->
-    <div id="root"></div>
+<body>
 
-    <!-- 6. Ini adalah seluruh kode React (JSX) kita -->
-    <script type="text/babel">
-        // Mengganti "import React..." karena React sudah dimuat secara global
-        const { useState, useEffect, useRef, useCallback } = React;
-
-        // --- Ikon (Komponen SVG Internal) ---
-
-        const IconUsers = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-        );
-
-        const IconShield = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        );
-
-        const IconBookOpen = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
-        );
-
-        const IconEdit = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        );
-
-        const IconTrash = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
-        );
-
-        const IconSave = ({ className }) => (
-          <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-            <polyline points="17 21 17 13 7 13 7 21" />
-            <polyline points="7 3 7 8 15 8" />
-          </svg>
-        );
-
-        const IconLogOut = ({ className }) => (
-            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-        );
-
-        const IconAlertTriangle = ({ className }) => (
-            <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-        );
-
-
-        // --- Komponen Utama ---
-
-        /**
-         * Header Aplikasi
-         * Menampilkan nama sekolah dan logo (placeholder)
-         */
-        const AppHeader = () => (
-          <header className="w-full bg-green-700 text-white p-4 shadow-md">
-            <div className="container mx-auto flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                {/* Placeholder untuk Logo */}
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <IconBookOpen className="text-green-700 w-6 h-6" />
-                </div>
-                <span className="text-xl md:text-2xl font-bold">SMAS Plus Darussalam</span>
-              </div>
-              <h1 className="text-lg md:text-xl font-semibold hidden sm:block">Sistem Ujian Online</h1>
-            </div>
-          </header>
-        );
-
-        /**
-         * Komponen Timer Hitung Mundur
-         */
-        const ExamTimer = ({ duration, onTimeUp }) => {
-          const [timeLeft, setTimeLeft] = useState(duration * 60); // Durasi dalam detik
-
-          useEffect(() => {
-            if (timeLeft <= 0) {
-              onTimeUp();
-              return;
-            }
-
-            const intervalId = setInterval(() => {
-              setTimeLeft((prev) => prev - 1);
-            }, 1000);
-
-            return () => clearInterval(intervalId);
-          }, [timeLeft, onTimeUp]);
-
-          const formatTime = (time) => {
-            const hours = Math.floor(time / 3600);
-            const minutes = Math.floor((time % 3600) / 60);
-            const seconds = time % 60;
+    <!-- 1. HALAMAN LOGIN SISWA -->
+    <div id="student-login-view" class="full-screen flex-center">
+        <div class="login-card">
+            <div class="school-logo">🏫</div>
+            <h2 style="margin-bottom: 10px; color: var(--primary-color);">CBT SMA Plus Darussalam</h2>
+            <p style="margin-bottom: 30px; font-size: 0.9rem;">Asesmen Sumatif Akhir Semester Ganjil</p>
             
-            const h = String(hours).padStart(2, '0');
-            const m = String(minutes).padStart(2, '0');
-            const s = String(seconds).padStart(2, '0');
-
-            return `${h}:${m}:${s}`;
-          };
-
-          return (
-            <div className={`font-bold text-2xl p-3 rounded-lg shadow-md ${timeLeft < 600 ? 'text-red-600 bg-red-100' : 'text-gray-800 bg-white'}`}>
-              Sisa Waktu: {formatTime(timeLeft)}
-            </div>
-          );
-        };
-
-        /**
-         * Halaman Peringatan / Selesai (Overlay)
-         */
-        const ExamOverlay = ({ title, message, icon }) => (
-            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-white p-8 md:p-12 rounded-lg shadow-2xl text-center max-w-lg border border-gray-200">
-                    {icon === 'alert' && <IconAlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />}
-                    {icon === 'info' && <IconShield className="w-16 h-16 text-green-500 mx-auto mb-4" />}
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">{title}</h2>
-                    <p className="text-base md:text-lg text-gray-600">{message}</p>
+            <form id="student-form">
+                <div style="text-align: left;">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="student-name" placeholder="Masukkan nama lengkap" required>
                 </div>
-            </div>
-        );
-
-        // --- Halaman: SISWA ---
-
-        /**
-         * Halaman Login Siswa
-         */
-        const StudentLogin = ({ setPage, setCurrentUser, addStudent, isExamOpen, classes }) => {
-          const [nama, setNama] = useState('');
-          const [kelas, setKelas] = useState('');
-          const [error, setError] = useState('');
-
-          const handleSubmit = (e) => {
-            e.preventDefault();
-            if (!nama || !kelas) {
-              setError('Nama Lengkap dan Kelas harus diisi.');
-              return;
-            }
-            if (!isExamOpen) {
-              setError('Ujian saat ini sedang ditutup oleh panitia. Hubungi pengawas.');
-              return;
-            }
-            setError('');
-            const user = { nama, kelas };
-            setCurrentUser(user);
-            addStudent({ ...user, status: 'Login', loginTime: new Date() });
-            setPage('studentExam');
-          };
-
-          return (
-            <div className="flex-grow flex items-center justify-center p-4">
-              <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-xl border border-gray-200">
-                <IconUsers className="w-16 h-16 mx-auto text-green-600 mb-4" />
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Login Siswa</h2>
-                <p className="text-center text-gray-500 mb-6">Asesmen Sumatif Akhir Semester Ganjil</p>
                 
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4" role="alert">
-                    <span className="block sm:inline">{error}</span>
-                  </div>
-                )}
-                
-                {!isExamOpen && (
-                   <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-md mb-4" role="alert">
-                    <span className="block sm:inline">Ujian sedang ditutup.</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <label htmlFor="nama" className="block text-sm font-medium text-gray-700 mb-1">
-                      Nama Lengkap
-                    </label>
-                    <input
-                      type="text"
-                      id="nama"
-                      value={nama}
-                      onChange={(e) => setNama(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Masukkan nama lengkap Anda"
-                    />
-                  </div>
-                  <div className="mb-6">
-                    <label htmlFor="kelas" className="block text-sm font-medium text-gray-700 mb-1">
-                      Pilih Kelas
-                    </label>
-                    <select
-                      id="kelas"
-                      value={kelas}
-                      onChange={(e) => setKelas(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="" disabled>-- Pilih Kelas Anda --</option>
-                      {classes.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
+                <div style="text-align: left;">
+                    <label>Kelas</label>
+                    <select id="student-class" required>
+                        <option value="" disabled selected>Pilih Kelas</option>
+                        <option value="X">Kelas X</option>
+                        <option value="XI">Kelas XI</option>
+                        <option value="XII IIS">Kelas XII IIS</option>
+                        <option value="XII IBB">Kelas XII IBB</option>
                     </select>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!isExamOpen}
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    Login
-                  </button>
-                </form>
-              </div>
-            </div>
-          );
-        };
-
-        /**
-         * Halaman Ujian Siswa
-         */
-        const StudentExam = ({ currentUser, examLink, updateStudentStatus, setPage, setCurrentUser }) => {
-          const [examState, setExamState] = useState('welcome'); // 'welcome', 'running', 'finished', 'kicked'
-          const [blurCount, setBlurCount] = useState(0);
-          const [showWarning, setShowWarning] = useState(false);
-          const duration = 90; // Durasi ujian dalam menit
-
-          const handleStartExam = () => {
-            updateStudentStatus(currentUser.nama, 'Sedang Ujian');
-            setExamState('running');
-          };
-
-          const handleTimeUp = useCallback(() => {
-            updateStudentStatus(currentUser.nama, 'Selesai (Waktu Habis)');
-            setExamState('finished');
-          }, [currentUser.nama, updateStudentStatus]);
-
-          // Anti-Cheating: Tab/Window Switch
-          useEffect(() => {
-            if (examState !== 'running') return;
-
-            const handleVisibilityChange = () => {
-              if (document.hidden) {
-                setBlurCount((count) => {
-                  const newCount = count + 1;
-                  if (newCount > 2) {
-                    updateStudentStatus(currentUser.nama, 'Selesai (Melanggar)');
-                    setExamState('kicked');
-                  } else {
-                    setShowWarning(true);
-                    setTimeout(() => setShowWarning(false), 3000); // Sembunyikan peringatan setelah 3 detik
-                  }
-                  return newCount;
-                });
-              }
-            };
-
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-            return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-          }, [examState, updateStudentStatus, currentUser.nama]);
-
-          // Anti-Cheating: Disable Context Menu, Copy, Paste
-          useEffect(() => {
-            if (examState !== 'running') return;
-              
-            const preventDefault = (e) => e.preventDefault();
-            
-            const handleKeyDown = (e) => {
-              if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u' || e.key === 'C' || e.key === 'V' || e.key === 'U')) {
-                  e.preventDefault();
-              }
-              if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-                  e.preventDefault();
-              }
-            };
-
-            document.addEventListener('contextmenu', preventDefault);
-            document.addEventListener('keydown', handleKeyDown);
-
-            return () => {
-              document.removeEventListener('contextmenu', preventDefault);
-              document.removeEventListener('keydown', handleKeyDown);
-            };
-          }, [examState]);
-
-          const handleLogout = () => {
-              setCurrentUser(null);
-              setPage('home');
-          }
-
-          // Render berdasarkan state
-          if (examState === 'welcome') {
-            return (
-              <div className="flex-grow flex items-center justify-center p-4">
-                <div className="w-full max-w-lg bg-white p-8 rounded-lg shadow-xl text-center">
-                  <IconShield className="w-16 h-16 mx-auto text-green-600 mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Selamat Datang, {currentUser.nama}!</h2>
-                  <p className="text-lg text-gray-600 mb-6">
-                    Anda akan memulai Asesmen Sumatif Akhir Semester Ganjil. Waktu Anda ({duration} menit) akan dimulai setelah menekan tombol "Mulai Ujian".
-                  </p>
-                  <p className="text-sm text-red-600 mb-6">
-                    <strong>Perhatian:</strong> Jangan berpindah tab atau window. Jika Anda keluar dari halaman ujian lebih dari 2 kali, ujian Anda akan otomatis dianggap selesai.
-                  </p>
-                  <button
-                    onClick={handleStartExam}
-                    className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                  >
-                    Mulai Ujian
-                  </button>
                 </div>
-              </div>
-            );
-          }
 
-          if (examState === 'finished') {
-            return <ExamOverlay 
-                title="Waktu Ujian Telah Berakhir"
-                message="Waktu pengerjaan Anda telah habis. Silakan serahkan jawaban Anda jika menggunakan Google Form atau konfirmasi ke pengawas."
-                icon="info"
-            />;
-          }
+                <button type="submit" class="btn-primary">MULAI UJIAN</button>
+            </form>
+            <div id="login-msg" style="margin-top:10px; color: var(--danger);"></div>
 
-          if (examState === 'kicked') {
-            return <ExamOverlay 
-                title="Ujian Dihentikan"
-                message="Anda terdeteksi berpindah tab/jendela lebih dari 2 kali. Ujian Anda dinyatakan selesai."
-                icon="alert"
-            />;
-          }
-
-          // examState === 'running'
-          return (
-            <div className="w-full h-full flex flex-col relative">
-              <header className="w-full bg-white p-4 shadow-md sticky top-0 z-10 flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
-                <div className="text-left">
-                  <h2 className="text-xl font-bold text-gray-800">{currentUser.nama}</h2>
-                  <p className="text-sm text-gray-600">{currentUser.kelas}</p>
-                </div>
-                <ExamTimer duration={duration} onTimeUp={handleTimeUp} />
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-2 bg-red-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-600"
-                >
-                    <IconLogOut className="w-5 h-5" />
-                    <span>Logout</span>
+            <!-- AREA LOGIN PANITIA -->
+            <div style="margin-top: 25px; padding-top: 15px; border-top: 2px dashed #f3f4f6;">
+                <p style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 10px;">Area Terbatas</p>
+                <button onclick="app.showAdminLogin()" style="background-color: #4b5563; color: white; width: 100%;">
+                    🔐 Login Panitia
                 </button>
-              </header>
-
-              {showWarning && (
-                <div className="sticky top-[90px] md:top-[76px] z-20 bg-yellow-400 text-yellow-900 p-2 text-center font-semibold">
-                  <IconAlertTriangle className="w-5 h-5 inline-block mr-2"/>
-                  Peringatan: Anda berpindah tab! (Sisa {2 - blurCount} kali)
-                </div>
-              )}
-
-              <main className="flex-grow bg-gray-200">
-                {examLink ? (
-                  <iframe
-                    src={examLink}
-                    className="w-full h-full border-none"
-                    style={{ minHeight: 'calc(100vh - 100px)' }} // 100vh dikurangi tinggi header
-                    title="Soal Ujian"
-                    onCopy={(e) => e.preventDefault()}
-                    onCut={(e) => e.preventDefault()}
-                    onPaste={(e) => e.preventDefault()}
-                  >
-                    Memuat soal...
-                  </iframe>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <p className="text-xl text-red-600">Soal untuk kelas ini belum diatur oleh panitia.</p>
-                  </div>
-                )}
-              </main>
             </div>
-          );
-        };
+        </div>
+    </div>
 
+    <!-- 2. HALAMAN LOGIN ADMIN -->
+    <div id="admin-login-view" class="full-screen flex-center hidden" style="background-color: #e5e7eb;">
+        <div class="login-card">
+            <h3>Login Panitia</h3>
+            <br>
+            <form id="admin-form">
+                <input type="text" id="admin-user" placeholder="Username" required>
+                <input type="password" id="admin-pass" placeholder="Password" required>
+                <button type="submit" class="btn-primary" style="background-color: #374151;">Masuk</button>
+            </form>
+            <br>
+            <button onclick="app.showStudentLogin()" style="background:none; color:#666; text-decoration:underline;">Kembali</button>
+        </div>
+    </div>
 
-        // --- Halaman: PANITIA ---
-
-        /**
-         * Halaman Login Panitia
-         */
-        const AdminLogin = ({ setPage, setIsAdmin }) => {
-          const [email, setEmail] = useState('');
-          const [password, setPassword] = useState('');
-          const [error, setError] = useState('');
-
-          const handleSubmit = (e) => {
-            e.preventDefault();
-            if (email === 'smadalawang@gmail.com' && password === 'darussalam info') {
-              setIsAdmin(true);
-              setPage('adminDashboard');
-              setError('');
-            } else {
-              setError('Email atau password salah.');
-            }
-          };
-
-          return (
-            <div className="flex-grow flex items-center justify-center p-4">
-              <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-xl border border-gray-200">
-                <IconShield className="w-16 h-16 mx-auto text-green-600 mb-4" />
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Login Panitia</h2>
-                
-                {error && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mb-4" role="alert">
-                    <span className="block sm:inline">{error}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="smadalawang@gmail.com"
-                    />
-                  </div>
-                  <div className="mb-6">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      id="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                  >
-                    Login
-                  </button>
-                </form>
-              </div>
+    <!-- 3. HALAMAN DASHBOARD ADMIN -->
+    <div id="admin-dashboard-view" class="full-screen hidden" style="background-color: #e5e7eb;">
+        <div class="admin-dashboard">
+            <div class="dashboard-header">
+                <h2>⚙️ Panel Kontrol Ujian</h2>
+                <button onclick="app.adminLogout()" class="btn-danger" style="width: auto;">Keluar</button>
             </div>
-          );
-        };
 
-        /**
-         * Komponen Real-Time Clock untuk Admin
-         */
-        const RealTimeClock = () => {
-            const [time, setTime] = useState(new Date());
+            <div class="dashboard-content">
+                <div style="display: grid; grid-template-columns: 60% 40%; gap: 20px;">
+                    <!-- Kolom Kiri: Upload & Settings -->
+                    <div>
+                        <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; margin-bottom: 20px;">
+                            <h4 style="color: #166534;">📝 1. Input Link Soal (Google Drive)</h4>
+                            <p style="font-size: 0.8rem; color: #166534; margin-bottom: 10px;">
+                                Pastikan akses link Google Drive diatur ke <b>"Anyone with the link" (Siapa saja yang memiliki link)</b>.
+                            </p>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.9rem;">Link Soal Kelas X</label>
+                                <input type="text" id="link-x" placeholder="Tempel link Google Drive di sini..." style="margin-bottom: 5px;">
+                            </div>
 
-            useEffect(() => {
-                const timerId = setInterval(() => setTime(new Date()), 1000);
-                return () => clearInterval(timerId);
-            }, []);
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.9rem;">Link Soal Kelas XI</label>
+                                <input type="text" id="link-xi" placeholder="Tempel link Google Drive di sini..." style="margin-bottom: 5px;">
+                            </div>
 
-            return (
-                <div className="text-lg font-semibold text-gray-700 bg-white px-4 py-2 rounded-lg shadow-sm">
-                    {time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </div>
-            );
-        };
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.9rem;">Link Soal Kelas XII IIS</label>
+                                <input type="text" id="link-xii-iis" placeholder="Tempel link Google Drive di sini..." style="margin-bottom: 5px;">
+                            </div>
 
+                            <div style="margin-bottom: 10px;">
+                                <label style="font-size: 0.9rem;">Link Soal Kelas XII IBB</label>
+                                <input type="text" id="link-xii-ibb" placeholder="Tempel link Google Drive di sini..." style="margin-bottom: 5px;">
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px;">
+                            <h4>⏱️ 2. Durasi Ujian (Menit)</h4>
+                            <input type="number" id="exam-duration" value="90" min="1">
 
-        /**
-         * Halaman Dashboard Panitia
-         */
-        const AdminDashboard = ({ 
-          setPage, 
-          setIsAdmin, 
-          examLinks, 
-          setExamLinks, 
-          activeStudents, 
-          isExamOpen, 
-          setIsExamOpen,
-          classes
-        }) => {
-
-          const [editLinks, setEditLinks] = useState(examLinks);
-          const [editMode, setEditMode] = useState(false);
-          const [saveStatus, setSaveStatus] = useState(''); // 'saving', 'saved', 'error'
-
-          const handleLinkChange = (kelas, value) => {
-            setEditLinks((prev) => ({ ...prev, [kelas]: value }));
-          };
-
-          const handleSaveLinks = () => {
-            setSaveStatus('saving');
-            // Simulasi penyimpanan ke database
-            setTimeout(() => {
-                setExamLinks(editLinks);
-                setEditMode(false);
-                setSaveStatus('saved');
-                setTimeout(() => setSaveStatus(''), 2000); // Hilangkan status setelah 2 detik
-            }, 1000);
-          };
-
-          const handleLogout = () => {
-            setIsAdmin(false);
-            setPage('home');
-          };
-
-          const totalSiswa = activeStudents.length;
-          const siswaUjian = activeStudents.filter(s => s.status === 'Sedang Ujian').length;
-          const siswaSelesai = activeStudents.filter(s => s.status.includes('Selesai')).length;
-
-          return (
-            <div className="w-full flex-grow p-4 md:p-6 bg-gray-100">
-              <header className="flex flex-col md:flex-row items-center justify-between mb-6">
-                <h2 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Dashboard Panitia</h2>
-                <div className="flex items-center space-x-4">
-                    <RealTimeClock />
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center space-x-2 bg-red-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-600"
-                    >
-                        <IconLogOut className="w-5 h-5" />
-                        <span>Logout</span>
-                    </button>
-                </div>
-              </header>
-
-              {/* --- Kontrol Ujian & Statistik --- */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Kontrol Ujian</h3>
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => setIsExamOpen(!isExamOpen)}
-                            className={`py-2 px-5 rounded-lg font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2
-                            ${isExamOpen ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'}`}
-                        >
-                            {isExamOpen ? 'Tutup Akses Ujian' : 'Buka Akses Ujian'}
-                        </button>
-                        <div className="flex items-center space-x-2">
-                            <span className={`h-4 w-4 rounded-full ${isExamOpen ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                            <span className="text-lg font-medium text-gray-700">
-                                Status: {isExamOpen ? 'Dibuka' : 'Ditutup'}
-                            </span>
+                            <h4>🚀 3. Kontrol Portal</h4>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="app.startExamMode()" class="btn-primary">Simpan & Buka Portal</button>
+                                <button onclick="app.closePortal()" class="btn-danger">Tutup Portal</button>
+                            </div>
+                            <p id="portal-status" style="margin-top: 10px; font-weight: bold; color: #666;">Status: Menunggu Konfigurasi</p>
                         </div>
                     </div>
-                </div>
-                
-                <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                     <h3 className="text-xl font-semibold text-gray-800 mb-4">Statistik Siswa</h3>
-                     <div className="flex justify-between items-center">
-                        <div className="text-center">
-                            <p className="text-3xl font-bold text-blue-600">{totalSiswa}</p>
-                            <p className="text-sm text-gray-500">Total Login</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-3xl font-bold text-yellow-600">{siswaUjian}</p>
-                            <p className="text-sm text-gray-500">Sedang Ujian</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-3xl font-bold text-green-600">{siswaSelesai}</p>
-                            <p className="text-sm text-gray-500">Selesai</p>
-                        </div>
-                     </div>
-                </div>
-              </div>
 
-              {/* --- Manajemen Soal --- */}
-              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2 sm:mb-0">Manajemen Link Soal</h3>
-                    {!editMode ? (
-                        <button onClick={() => setEditMode(true)} className="flex items-center space-x-2 bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-600">
-                            <IconEdit className="w-5 h-5" />
-                            <span>Edit Link</span>
-                        </button>
-                    ) : (
-                        <div className="flex items-center space-x-2">
-                            {saveStatus === 'saved' && <span className="text-green-600">Tersimpan!</span>}
-                            <button onClick={() => { setEditMode(false); setEditLinks(examLinks); }} className="bg-gray-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-600">
-                                Batal
-                            </button>
-                            <button onClick={handleSaveLinks} disabled={saveStatus === 'saving'} className="flex items-center space-x-2 bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-green-300">
-                                <IconSave className="w-5 h-5" />
-                                <span>{saveStatus === 'saving' ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
-                            </button>
-                        </div>
-                    )}
+                    <!-- Kolom Kanan: Monitor (Simulasi) -->
+                    <div class="monitor-panel">
+                        <h4>📡 Monitoring Siswa (Live)</h4>
+                        <p style="font-size: 0.8rem; color: #666;">Status siswa yang sedang login (Simulasi).</p>
+                        <ul id="student-monitor-list" style="list-style: none; margin-top: 10px; font-size: 0.9rem;">
+                            <li style="padding: 5px; border-bottom: 1px solid #eee; color: #999;">Belum ada siswa aktif.</li>
+                        </ul>
+                    </div>
                 </div>
-                
-                <div className="space-y-4">
-                    {classes.map((kelas) => (
-                        <div key={kelas} className="flex flex-col md:flex-row items-center md:space-x-4">
-                            <label htmlFor={`link-${kelas}`} className="w-full md:w-1/6 font-medium text-gray-700 mb-1 md:mb-0">
-                                Kelas {kelas}
-                            </label>
-                            <input
-                                type="text"
-                                id={`link-${kelas}`}
-                                value={editLinks[kelas] || ''}
-                                onChange={(e) => handleLinkChange(kelas, e.target.value)}
-                                readOnly={!editMode}
-                                className="w-full md:w-5/6 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 read-only:bg-gray-100 read-only:text-gray-500"
-                                placeholder="Masukkan link Google Drive / Form"
-                            />
-                            {/* Tombol Hapus (opsional) */}
-                            {editMode && (
-                                <button onClick={() => handleLinkChange(kelas, '')} className="text-red-500 hover:text-red-700 ml-2 mt-2 md:mt-0">
-                                    <IconTrash className="w-5 h-5"/>
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* --- Monitoring Siswa --- */}
-              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">Monitoring Aktivitas Siswa</h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-max text-left">
-                        <thead className="bg-gray-100 border-b">
-                            <tr>
-                                <th className="p-3 font-semibold text-gray-600">Nama Lengkap</th>
-                                <th className="p-3 font-semibold text-gray-600">Kelas</th>
-                                <th className="p-3 font-semibold text-gray-600">Status</th>
-                                <th className="p-3 font-semibold text-gray-600">Waktu Login</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeStudents.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="p-4 text-center text-gray-500">Belum ada siswa yang login.</td>
-                                </tr>
-                            ) : (
-                                [...activeStudents].reverse().map((student, index) => (
-                                    <tr key={index} className="border-b hover:bg-gray-50">
-                                        <td className="p-3">{student.nama}</td>
-                                        <td className="p-3">{student.kelas}</td>
-                                        <td className="p-3">
-                                            <span className={`px-3 py-1 rounded-full text-sm font-medium
-                                                ${student.status === 'Sedang Ujian' ? 'bg-yellow-100 text-yellow-800' :
-                                                student.status.includes('Selesai') ? 'bg-green-100 text-green-800' :
-                                                student.status === 'Login' ? 'bg-blue-100 text-blue-800' : ''
-                                                }`}
-                                            >
-                                                {student.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-3 text-sm text-gray-600">
-                                            {student.loginTime.toLocaleString('id-ID')}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-              </div>
             </div>
-          );
+        </div>
+    </div>
+
+    <!-- 4. HALAMAN UJIAN SISWA -->
+    <div id="exam-view" class="exam-layout hidden">
+        <!-- Watermark Nama Siswa -->
+        <div id="watermark-name" class="watermark">SISWA</div>
+
+        <div class="exam-header">
+            <div>
+                <h3 id="header-student-name">Nama Siswa</h3>
+                <span id="header-student-class" style="font-size: 0.8rem; opacity: 0.9;">Kelas X</span>
+            </div>
+            <div class="timer-box" id="timer-display">00:00:00</div>
+            <button onclick="app.finishExam()" class="btn-danger" style="width: auto; padding: 8px 15px;">Selesai</button>
+        </div>
+        
+        <div class="exam-body">
+            <!-- Embed PDF Viewer -->
+            <iframe id="pdf-frame" class="pdf-viewer" src=""></iframe>
+            <div id="no-pdf-msg" class="flex-center hidden" style="width:100%; color: white; flex-direction: column; text-align: center; padding: 20px;">
+                <h3>Soal Tidak Ditemukan</h3>
+                <p style="margin-top: 10px;">Mohon lapor ke pengawas bahwa soal untuk kelas Anda belum diupload.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. HALAMAN BLOKIR / SELESAI -->
+    <div id="blocked-view" class="block-screen flex-center hidden">
+        <div class="block-icon">⚠️</div>
+        <h1 id="blocked-title">UJIAN DIKUNCI</h1>
+        <p id="blocked-msg" style="max-width: 500px; margin: 20px 0; font-size: 1.2rem;">
+            Anda terdeteksi melakukan kecurangan dengan meninggalkan halaman ujian lebih dari batas yang ditentukan.
+        </p>
+        <button onclick="location.reload()" style="background: white; color: black; margin-top: 20px;">Kembali ke Awal</button>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        const state = {
+            examLinks: {
+                'X': null,
+                'XI': null,
+                'XII IIS': null,
+                'XII IBB': null
+            },
+            durationMinutes: 90,
+            isPortalOpen: false,
+            cheatingStrikes: 0,
+            maxStrikes: 2, // 0, 1, 2 (on 3rd lock)
+            timerInterval: null,
+            currentStudent: null
         };
 
+        // --- APP LOGIC CONTROLLER ---
+        const app = {
+            // Inisialisasi
+            init: function() {
+                this.bindEvents();
+                this.preventCheatingInputs();
+            },
 
-        // --- Halaman Utama & Router ---
+            // Event Listeners
+            bindEvents: function() {
+                // Student Login
+                document.getElementById('student-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleStudentLogin();
+                });
 
-        /**
-         * Halaman Home (Pilihan Login)
-         */
-        const HomePage = ({ setPage }) => (
-          <div className="flex-grow flex items-center justify-center p-4">
-            <div className="text-center">
-                <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border-4 border-green-600">
-                  <IconBookOpen className="text-green-600 w-16 h-16" />
-                </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                Sistem Ujian Online
-              </h1>
-              <h2 className="text-2xl md:text-3xl font-semibold text-green-700 mb-8">
-                SMAS Plus Darussalam
-              </h2>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                  onClick={() => setPage('studentLogin')}
-                  className="flex items-center justify-center space-x-3 w-full sm:w-64 bg-green-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-transform transform hover:scale-105"
-                >
-                  <IconUsers className="w-6 h-6" />
-                  <span>Login Siswa</span>
-                </button>
-                <button
-                  onClick={() => setPage('adminLogin')}
-                  className="flex items-center justify-center space-x-3 w-full sm:w-64 bg-gray-700 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-transform transform hover:scale-105"
-                >
-                  <IconShield className="w-6 h-6" />
-                  <span>Login Panitia</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
+                // Admin Login
+                document.getElementById('admin-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAdminLogin();
+                });
+            },
 
-        /**
-         * Komponen App Utama
-         * (Bertindak sebagai Router dan Penyimpan State Global)
-         */
-        function App() { // Mengubah 'export default function App' menjadi 'function App'
-          // --- State Global (Simulasi Database) ---
-          const [page, setPage] = useState('home'); // 'home', 'studentLogin', 'studentExam', 'adminLogin', 'adminDashboard'
-          const [isAdmin, setIsAdmin] = useState(false);
-          const [currentUser, setCurrentUser] = useState(null); // { nama: '...', kelas: '...' }
-          const [isExamOpen, setIsExamOpen] = useState(true); // Status ujian (dibuka/ditutup)
+            // Navigasi View
+            showView: function(viewId) {
+                document.querySelectorAll('body > div').forEach(div => div.classList.add('hidden'));
+                document.getElementById(viewId).classList.remove('hidden');
+            },
 
-          // Daftar kelas
-          const classes = ['X', 'XI', 'XII IIS', 'XII IBB'];
+            showAdminLogin: function() { this.showView('admin-login-view'); },
+            showStudentLogin: function() { this.showView('student-login-view'); },
 
-          // Data dummy untuk link soal (bisa diubah oleh admin)
-          const [examLinks, setExamLinks] = useState({
-            'X': 'https://docs.google.com/forms/d/e/1FAIpQLSeVfSBo_cN-dBC1N-1LuhSjJ8T-EBcb-Oedbe_BCCciI5gD9g/viewform?embedded=true',
-            'XI': 'https://docs.google.com/forms/d/e/1FAIpQLSf4uBUqYvHiV3wxlSso4qM-fHjYd59aDqshPINKBSb1oE0xJw/viewform?embedded=true',
-            'XII IIS': 'https://docs.google.com/forms/d/e/1FAIpQLSc_xJ1KYm-0iGZ-NhFIm0-mFSLs-f0i8L9T9-84NTo8iL9fJg/viewform?embedded=true',
-            'XII IBB': 'https://docs.google.com/forms/d/e/1FAIpQLScM1yFR-f-qMClD-s-yFf0gO3qS-E4V4f6-8iT0K2oE-a9b7Q/viewform?embedded=true',
-          });
+            // --- ADMIN LOGIC ---
+            handleAdminLogin: function() {
+                const u = document.getElementById('admin-user').value;
+                const p = document.getElementById('admin-pass').value;
+                
+                if (u === 'admin' && p === 'smadalawang20517826') {
+                    this.showView('admin-dashboard-view');
+                } else {
+                    alert('Username atau Password Salah!');
+                }
+            },
 
-          // Data dummy untuk monitoring siswa (akan diisi saat siswa login)
-          const [activeStudents, setActiveStudents] = useState([
-              // Contoh data dummy
-              // { nama: 'Ahmad Budi', kelas: 'X', status: 'Selesai (Waktu Habis)', loginTime: new Date(Date.now() - 3600*1000*2) },
-              // { nama: 'Cintya Dewi', kelas: 'XI', status: 'Sedang Ujian', loginTime: new Date(Date.now() - 3600*1000) },
-          ]);
+            adminLogout: function() {
+                this.showStudentLogin();
+            },
 
-          // --- Fungsi Helper (Simulasi Aksi Database) ---
+            startExamMode: function() {
+                const linkX = document.getElementById('link-x').value;
+                const linkXI = document.getElementById('link-xi').value;
+                const linkXII_IIS = document.getElementById('link-xii-iis').value;
+                const linkXII_IBB = document.getElementById('link-xii-ibb').value;
+                const durationInput = document.getElementById('exam-duration');
 
-          const addStudent = (student) => {
-            // Cek jika siswa sudah login sebelumnya
-            const existingStudent = activeStudents.find(s => s.nama === student.nama && s.kelas === student.kelas);
-            if (!existingStudent) {
-                setActiveStudents((prev) => [...prev, student]);
-            } else {
-                // Jika sudah ada, update statusnya jadi 'Login' lagi (jika re-login)
-                updateStudentStatus(student.nama, 'Login');
+                // Helper: Convert GDrive View link to Preview link for embedding
+                const formatLink = (link) => {
+                    if (!link) return null;
+                    // Jika link adalah link 'view' biasa, ubah ke 'preview' agar bisa di-embed
+                    if (link.includes('drive.google.com') && link.includes('/view')) {
+                        return link.replace('/view', '/preview');
+                    }
+                    return link;
+                };
+
+                state.examLinks = {
+                    'X': formatLink(linkX),
+                    'XI': formatLink(linkXI),
+                    'XII IIS': formatLink(linkXII_IIS),
+                    'XII IBB': formatLink(linkXII_IBB)
+                };
+
+                state.durationMinutes = parseInt(durationInput.value);
+                state.isPortalOpen = true;
+
+                document.getElementById('portal-status').innerText = "Status: PORTAL TERBUKA (Siap Ujian)";
+                document.getElementById('portal-status').style.color = "var(--primary-color)";
+                
+                alert('Portal Ujian Dibuka.\nLink soal telah disimpan untuk masing-masing kelas.');
+                this.showStudentLogin(); 
+            },
+
+            closePortal: function() {
+                state.isPortalOpen = false;
+                document.getElementById('portal-status').innerText = "Status: PORTAL DITUTUP";
+                document.getElementById('portal-status').style.color = "var(--danger)";
+                alert('Portal ditutup. Siswa tidak bisa login.');
+            },
+
+            // --- STUDENT LOGIC ---
+            handleStudentLogin: function() {
+                if (!state.isPortalOpen) {
+                    document.getElementById('login-msg').innerText = "Portal ujian belum dibuka oleh panitia.";
+                    return;
+                }
+
+                const name = document.getElementById('student-name').value;
+                const kelas = document.getElementById('student-class').value;
+
+                state.currentStudent = { name, kelas };
+                
+                const confirmExam = confirm(`Halo ${name} (${kelas}).\nUjian akan segera dimulai.\n\nPERATURAN:\n1. Dilarang membuka tab lain.\n2. Dilarang keluar dari layar penuh.\n3. Sistem akan mengunci jika melanggar.\n\nSiap?`);
+
+                if (confirmExam) {
+                    this.startExamSession();
+                }
+            },
+
+            startExamSession: function() {
+                // Request Fullscreen
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(err => console.log(err));
+
+                // Setup UI
+                document.getElementById('header-student-name').innerText = state.currentStudent.name;
+                document.getElementById('header-student-class').innerText = state.currentStudent.kelas;
+                document.getElementById('watermark-name').innerText = state.currentStudent.name + " - " + state.currentStudent.kelas;
+
+                // Load PDF based on Class
+                const iframe = document.getElementById('pdf-frame');
+                const studentClass = state.currentStudent.kelas;
+                const examUrl = state.examLinks[studentClass];
+
+                if (examUrl) {
+                    iframe.src = examUrl;
+                    document.getElementById('no-pdf-msg').classList.add('hidden');
+                } else {
+                    iframe.src = ""; // Clear iframe
+                    document.getElementById('no-pdf-msg').classList.remove('hidden');
+                }
+
+                // Start Timer
+                this.startTimer(state.durationMinutes * 60);
+
+                // Start Anti-Cheat
+                this.activateAntiCheat();
+
+                this.showView('exam-view');
+            },
+
+            // --- EXAM TOOLS ---
+            startTimer: function(durationSeconds) {
+                let timer = durationSeconds, minutes, seconds, hours;
+                const display = document.getElementById('timer-display');
+
+                state.timerInterval = setInterval(() => {
+                    hours = parseInt(timer / 3600, 10);
+                    minutes = parseInt((timer % 3600) / 60, 10);
+                    seconds = parseInt(timer % 60, 10);
+
+                    hours = hours < 10 ? "0" + hours : hours;
+                    minutes = minutes < 10 ? "0" + minutes : minutes;
+                    seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                    display.textContent = hours + ":" + minutes + ":" + seconds;
+
+                    if (--timer < 0) {
+                        this.finishExam(true);
+                    }
+                }, 1000);
+            },
+
+            finishExam: function(force = false) {
+                if (!force && !confirm("Apakah Anda yakin ingin mengakhiri ujian? Anda tidak bisa kembali.")) return;
+
+                clearInterval(state.timerInterval);
+                
+                // Show Done Screen
+                const blockView = document.getElementById('blocked-view');
+                document.getElementById('blocked-title').innerText = "UJIAN SELESAI";
+                document.getElementById('blocked-msg').innerText = "Terima kasih telah mengerjakan ujian. Silakan lapor ke pengawas dan kumpulkan Lembar Jawaban (LJK).";
+                document.querySelector('#blocked-view .block-icon').innerText = "✅";
+                
+                this.showView('blocked-view');
+                
+                // Exit fullscreen
+                if (document.exitFullscreen) document.exitFullscreen().catch(err => {});
+            },
+
+            lockExam: function(reason) {
+                clearInterval(state.timerInterval);
+                this.showView('blocked-view');
+                document.getElementById('blocked-title').innerText = "PELANGGARAN TERDETEKSI";
+                document.getElementById('blocked-msg').innerText = reason || "Aktivitas mencurigakan terdeteksi.";
+            },
+
+            // --- ANTI CHEAT SYSTEM ---
+            activateAntiCheat: function() {
+                document.addEventListener("visibilitychange", () => {
+                    if (document.hidden) {
+                        this.handleStrike("Membuka tab lain atau meminimize browser.");
+                    }
+                });
+            },
+
+            handleStrike: function(activity) {
+                const blockedView = document.getElementById('blocked-view');
+                if (!blockedView.classList.contains('hidden')) return; 
+
+                state.cheatingStrikes++;
+                
+                if (state.cheatingStrikes > state.maxStrikes) {
+                    this.lockExam(`Akses ditutup otomatis karena Anda meninggalkan halaman ujian sebanyak 3 kali.\n(${activity})`);
+                } else {
+                    alert(`PERINGATAN ${state.cheatingStrikes}/3\n\nJangan tinggalkan halaman ujian! Sistem mendeteksi: ${activity}\nJika terjadi lagi, ujian akan dikunci.`);
+                }
+            },
+
+            preventCheatingInputs: function() {
+                document.addEventListener('contextmenu', event => event.preventDefault());
+                document.addEventListener('copy', event => { event.preventDefault(); alert("Copy dinonaktifkan"); });
+                document.addEventListener('selectstart', event => event.preventDefault());
+
+                document.onkeydown = function(e) {
+                    if(e.keyCode == 123) { return false; } 
+                    if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; } 
+                    if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; } 
+                    if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; } 
+                    if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } 
+                }
             }
-          };
+        };
 
-          const updateStudentStatus = (nama, status) => {
-            setActiveStudents((prev) =>
-              prev.map((student) =>
-                student.nama === nama ? { ...student, status: status } : student
-              )
-            );
-          };
-          
-          // --- Render Konten Halaman ---
-          
-          const renderPage = () => {
-            if (page === 'home') {
-              return <HomePage setPage={setPage} />;
-            }
-            if (page === 'studentLogin') {
-              return <StudentLogin 
-                        setPage={setPage} 
-                        setCurrentUser={setCurrentUser} 
-                        addStudent={addStudent}
-                        isExamOpen={isExamOpen}
-                        classes={classes}
-                     />;
-            }
-            if (page === 'studentExam' && currentUser) {
-              return <StudentExam 
-                        currentUser={currentUser} 
-                        examLink={examLinks[currentUser.kelas]}
-                        updateStudentStatus={updateStudentStatus}
-                        setPage={setPage}
-                        setCurrentUser={setCurrentUser}
-                     />;
-            }
-            if (page === 'adminLogin') {
-              return <AdminLogin setPage={setPage} setIsAdmin={setIsAdmin} />;
-            }
-            if (page === 'adminDashboard' && isAdmin) {
-              return <AdminDashboard 
-                        setPage={setPage} 
-                        setIsAdmin={setIsAdmin}
-                        examLinks={examLinks}
-                        setExamLinks={setExamLinks}
-                        activeStudents={activeStudents}
-                        isExamOpen={isExamOpen}
-                        setIsExamOpen={setIsExamOpen}
-                        classes={classes}
-                     />;
-            }
-            
-            // Fallback jika terjadi state aneh (mis. akses studentExam tanpa login)
-            if (page === 'studentExam' && !currentUser) {
-                setPage('studentLogin');
-                return <StudentLogin 
-                        setPage={setPage} 
-                        setCurrentUser={setCurrentUser} 
-                        addStudent={addStudent}
-                        isExamOpen={isExamOpen}
-                        classes={classes}
-                     />;
-            }
-            
-            // Default fallback
-            return <HomePage setPage={setPage} />;
-          };
-
-          return (
-            <div className="min-h-screen w-full flex flex-col bg-gray-100 text-gray-900">
-              {/* Hanya tampilkan Header utama di halaman non-ujian. 
-                Halaman ujian punya header-nya sendiri.
-              */}
-              {page !== 'studentExam' && <AppHeader />}
-              
-              {/* Konten utama yang berubah-ubah */}
-              {renderPage()}
-              
-              {/* Footer (opsional) */}
-              {page !== 'studentExam' && (
-                  <footer className="w-full text-center p-4 text-gray-500 text-sm">
-                    &copy; {new Date().getFullYear()} SMAS Plus Darussalam. All rights reserved.
-                  </footer>
-              )}
-            </div>
-          );
-        }
-
-        // --- 7. Memasang (render) aplikasi React ke 'root' ---
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<App />);
+        // Start App
+        window.onload = () => app.init();
 
     </script>
 </body>
