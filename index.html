@@ -166,7 +166,7 @@
             background: #525659; /* PDF Viewer background style */
             display: flex;
             justify-content: center;
-            overflow: auto;
+            overflow: hidden;
         }
 
         iframe.pdf-viewer {
@@ -338,13 +338,13 @@
             <button onclick="app.finishExam()" class="btn-danger" style="width: auto; padding: 8px 15px;">Selesai</button>
         </div>
         
-        <div class="exam-body">
-            <!-- Embed PDF Viewer -->
-            <iframe id="pdf-frame" class="pdf-viewer" src=""></iframe>
-            <div id="no-pdf-msg" class="flex-center hidden" style="width:100%; color: white; flex-direction: column; text-align: center; padding: 20px;">
-                <h3>Soal Tidak Ditemukan</h3>
-                <p style="margin-top: 10px;">Mohon lapor ke pengawas bahwa soal untuk kelas Anda belum diupload.</p>
-            </div>
+        <div class="exam-body" style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0;">
+    <iframe id="pdf-frame" class="pdf-viewer" style="flex:1; width:100%; height:100%; border:none;" src=""></iframe>
+    <div id="no-pdf-msg" class="flex-center hidden" style="width:100%; color:white; flex-direction:column; text-align:center; padding:20px;">
+        <h3>Soal Tidak Ditemukan</h3>
+        <p style="margin-top:10px;">Mohon lapor ke pengawas bahwa soal untuk kelas Anda belum diupload.</p>
+    </div>
+</div>
         </div>
     </div>
 
@@ -368,7 +368,8 @@
             cheatingStrikes: 0,
             maxStrikes: 2,
             timerInterval: null,
-            currentStudent: null
+            currentStudent: null,
+            monitor: [] // list of active students for monitoring
         };
 
         const loadState = () => {
@@ -385,11 +386,11 @@
 
         const saveState = (s) => {
             try {
-                // store only needed parts
                 const toSave = {
                     examLinks: s.examLinks,
                     durationMinutes: s.durationMinutes,
-                    isPortalOpen: s.isPortalOpen
+                    isPortalOpen: s.isPortalOpen,
+                    monitor: s.monitor || []
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
             } catch (e) { console.error('Failed to save state', e); }
@@ -399,7 +400,6 @@
 
         // --- APP LOGIC CONTROLLER ---
         const app = {
-            // Inisialisasi
             init: function() {
                 this.bindEvents();
                 this.preventCheatingInputs();
@@ -407,24 +407,21 @@
             },
 
             bindEvents: function() {
-                // Student Login
                 const studentForm = document.getElementById('student-form');
                 if (studentForm) studentForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleStudentLogin();
                 });
 
-                // Admin Login
                 const adminForm = document.getElementById('admin-form');
                 if (adminForm) adminForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleAdminLogin();
                 });
 
-                // Also allow admin dashboard inputs to reflect saved links on load
+                // Reflect changes from other tabs on same device
                 window.addEventListener('storage', (e) => {
-                    // If another tab updates the state, reload local copy
-                    if (e.key === STORAGE_KEY) {
+                    if (e.key === STORAGE_KEY || e.key === 'cbt_last_update') {
                         const newState = loadState();
                         Object.assign(state, newState);
                         this.syncUIFromState();
@@ -433,14 +430,12 @@
             },
 
             syncUIFromState: function() {
-                // Update portal status text
                 const portalStatus = document.getElementById('portal-status');
                 if (portalStatus) {
                     portalStatus.innerText = state.isPortalOpen ? 'Status: PORTAL TERBUKA (Siap Ujian)' : 'Status: PORTAL DITUTUP';
                     portalStatus.style.color = state.isPortalOpen ? 'var(--primary-color)' : 'var(--danger)';
                 }
 
-                // fill admin inputs if any
                 const setIf = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ''; };
                 setIf('link-x', state.examLinks['X']);
                 setIf('link-xi', state.examLinks['XI']);
@@ -448,9 +443,27 @@
                 setIf('link-xii-ibb', state.examLinks['XII IBB']);
                 const dur = document.getElementById('exam-duration'); if (dur) dur.value = state.durationMinutes;
 
-                // If student view and portal closed, show message
                 const loginMsg = document.getElementById('login-msg');
                 if (loginMsg) loginMsg.innerText = state.isPortalOpen ? '' : 'Portal ujian belum dibuka oleh panitia.';
+
+                this.renderMonitorList();
+            },
+
+            renderMonitorList: function() {
+                const ul = document.getElementById('student-monitor-list');
+                if (!ul) return;
+                ul.innerHTML = '';
+                if (!state.monitor || state.monitor.length === 0) {
+                    ul.innerHTML = '<li style="padding:5px; border-bottom:1px solid #eee; color:#999;">Belum ada siswa aktif.</li>';
+                    return;
+                }
+                state.monitor.slice().reverse().forEach(entry => {
+                    const li = document.createElement('li');
+                    li.style.padding = '6px';
+                    li.style.borderBottom = '1px solid #eee';
+                    li.innerText = `${entry.name} — ${entry.kelas} (${entry.time})`;
+                    ul.appendChild(li);
+                });
             },
 
             showView: function(viewId) {
@@ -462,7 +475,6 @@
             showAdminLogin: function() { this.showView('admin-login-view'); },
             showStudentLogin: function() { this.showView('student-login-view'); },
 
-            // --- ADMIN LOGIC ---
             handleAdminLogin: function() {
                 const u = document.getElementById('admin-user').value;
                 const p = document.getElementById('admin-pass').value;
@@ -476,16 +488,12 @@
 
             adminLogout: function() { this.showStudentLogin(); },
 
-            // Helper: robust link -> preview
             extractFileId: function(link) {
                 if (!link) return null;
-                // /d/FILE_ID/
                 let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
                 if (m) return m[1];
-                // id=FILE_ID
                 m = link.match(/id=([a-zA-Z0-9_-]{10,})/);
                 if (m) return m[1];
-                // uc?id=FILE_ID
                 m = link.match(/uc\?id=([a-zA-Z0-9_-]{10,})/);
                 if (m) return m[1];
                 return null;
@@ -513,9 +521,7 @@
 
                 state.durationMinutes = parseInt(durationInput.value) || 90;
                 state.isPortalOpen = true;
-
                 saveState(state);
-                // Notify other tabs (storage event will fire there)
                 localStorage.setItem('cbt_last_update', Date.now());
 
                 document.getElementById('portal-status').innerText = "Status: PORTAL TERBUKA (Siap Ujian)";
@@ -536,9 +542,8 @@
                 this.syncUIFromState();
             },
 
-            // --- STUDENT LOGIC ---
             handleStudentLogin: function() {
-                // reload state from storage at moment of login (in case admin opened portal elsewhere)
+                // Reload latest state from storage to capture admin changes on same device
                 Object.assign(state, loadState());
 
                 if (!state.isPortalOpen) {
@@ -550,22 +555,39 @@
                 const kelas = document.getElementById('student-class').value;
 
                 state.currentStudent = { name, kelas };
-                const confirmExam = confirm(`Halo ${name} (${kelas}).\nUjian akan segera dimulai.\n\nPERATURAN:\n1. Dilarang membuka tab lain.\n2. Dilarang keluar dari layar penuh.\n3. Sistem akan mengunci jika melanggar.\n\nSiap?`);
+
+                const now = new Date();
+                const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+                // Add to monitor list
+                state.monitor = state.monitor || [];
+                state.monitor.push({ name, kelas, time: timeStr });
+                // keep only last 50
+                if (state.monitor.length > 50) state.monitor.shift();
+                saveState(state);
+                localStorage.setItem('cbt_last_update', Date.now());
+
+                const confirmExam = confirm(`Halo ${name} (${kelas}).
+Ujian akan segera dimulai.
+
+PERATURAN:
+1. Dilarang membuka tab lain.
+2. Dilarang keluar dari layar penuh.
+3. Sistem akan mengunci jika melanggar.
+
+Siap?`);
 
                 if (confirmExam) this.startExamSession();
             },
 
             startExamSession: function() {
-                // Request Fullscreen
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) elem.requestFullscreen().catch(err => console.log(err));
 
-                // Setup UI
                 document.getElementById('header-student-name').innerText = state.currentStudent.name;
                 document.getElementById('header-student-class').innerText = state.currentStudent.kelas;
                 document.getElementById('watermark-name').innerText = state.currentStudent.name + " - " + state.currentStudent.kelas;
 
-                // Load PDF based on Class
                 const iframe = document.getElementById('pdf-frame');
                 const studentClass = state.currentStudent.kelas;
                 const examUrl = state.examLinks[studentClass];
@@ -574,20 +596,15 @@
                     iframe.src = examUrl;
                     document.getElementById('no-pdf-msg').classList.add('hidden');
                 } else {
-                    iframe.src = ""; // Clear iframe
+                    iframe.src = "";
                     document.getElementById('no-pdf-msg').classList.remove('hidden');
                 }
 
-                // Start Timer
                 this.startTimer(state.durationMinutes * 60);
-
-                // Start Anti-Cheat
                 this.activateAntiCheat();
-
                 this.showView('exam-view');
             },
 
-            // --- EXAM TOOLS ---
             startTimer: function(durationSeconds) {
                 let timer = durationSeconds, minutes, seconds, hours;
                 const display = document.getElementById('timer-display');
@@ -615,7 +632,6 @@
                 if (!force && !confirm("Apakah Anda yakin ingin mengakhiri ujian? Anda tidak bisa kembali.")) return;
 
                 clearInterval(state.timerInterval);
-                const blockView = document.getElementById('blocked-view');
                 document.getElementById('blocked-title').innerText = "UJIAN SELESAI";
                 document.getElementById('blocked-msg').innerText = "Terima kasih telah mengerjakan ujian. Silakan lapor ke pengawas dan kumpulkan Lembar Jawaban (LJK).";
                 document.querySelector('#blocked-view .block-icon').innerText = "✅";
@@ -630,7 +646,6 @@
                 document.getElementById('blocked-msg').innerText = reason || "Aktivitas mencurigakan terdeteksi.";
             },
 
-            // --- ANTI CHEAT SYSTEM ---
             activateAntiCheat: function() {
                 document.addEventListener("visibilitychange", () => {
                     if (document.hidden) {
@@ -645,9 +660,13 @@
 
                 state.cheatingStrikes++;
                 if (state.cheatingStrikes > state.maxStrikes) {
-                    this.lockExam(`Akses ditutup otomatis karena Anda meninggalkan halaman ujian sebanyak 3 kali.\n(${activity})`);
+                    this.lockExam(`Akses ditutup otomatis karena Anda meninggalkan halaman ujian sebanyak 3 kali.
+(${activity})`);
                 } else {
-                    alert(`PERINGATAN ${state.cheatingStrikes}/3\n\nJangan tinggalkan halaman ujian! Sistem mendeteksi: ${activity}\nJika terjadi lagi, ujian akan dikunci.`);
+                    alert(`PERINGATAN ${state.cheatingStrikes}/3
+
+Jangan tinggalkan halaman ujian! Sistem mendeteksi: ${activity}
+Jika terjadi lagi, ujian akan dikunci.`);
                 }
             },
 
@@ -666,10 +685,7 @@
             }
         };
 
-        // Start App
         window.addEventListener('DOMContentLoaded', () => app.init());
-
     </script>
 </body>
 </html>
-
