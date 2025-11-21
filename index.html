@@ -453,6 +453,7 @@
 
                 state.durationMinutes = parseInt(durationInput.value);
                 state.isPortalOpen = true;
+                localStorage.setItem("portalOpen", "true");
 
                 document.getElementById('portal-status').innerText = "Status: PORTAL TERBUKA (Siap Ujian)";
                 document.getElementById('portal-status').style.color = "var(--primary-color)";
@@ -463,6 +464,7 @@
 
             closePortal: function() {
                 state.isPortalOpen = false;
+                localStorage.setItem("portalOpen", "false");
                 document.getElementById('portal-status').innerText = "Status: PORTAL DITUTUP";
                 document.getElementById('portal-status').style.color = "var(--danger)";
                 alert('Portal ditutup. Siswa tidak bisa login.');
@@ -470,7 +472,7 @@
 
             // --- STUDENT LOGIC ---
             handleStudentLogin: function() {
-                if (!state.isPortalOpen) {
+                if (!state.isPortalOpen && localStorage.getItem("portalOpen") !== "true") {
                     document.getElementById('login-msg').innerText = "Portal ujian belum dibuka oleh panitia.";
                     return;
                 }
@@ -608,6 +610,7 @@
     </script>
 </body>
 </html>
+
 
 
 
