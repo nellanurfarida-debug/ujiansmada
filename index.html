@@ -25,15 +25,14 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            height: 100vh;
-            overflow: hidden; /* Prevent scroll on body level */
-            user-select: none; /* Disable text selection globally */
+            min-height: 100vh;
+            /* allow scroll if needed */
         }
 
         /* --- UTILITIES --- */
         .hidden { display: none !important; }
         .flex-center { display: flex; justify-content: center; align-items: center; }
-        .full-screen { width: 100vw; height: 100vh; }
+        .full-screen { width: 100%; min-height: 100vh; }
         .container { max-width: 500px; margin: 0 auto; padding: 20px; }
         
         button {
@@ -107,7 +106,7 @@
             width: 95%;
             margin: 20px auto;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            height: 90vh;
+            min-height: 90vh;
             display: flex;
             flex-direction: column;
         }
@@ -139,7 +138,7 @@
         .exam-layout {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
         }
 
         .exam-header {
@@ -194,7 +193,10 @@
             background: rgba(0,0,0,0.95);
             color: white;
             z-index: 10000;
+            display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
@@ -347,7 +349,7 @@
     </div>
 
     <!-- 5. HALAMAN BLOKIR / SELESAI -->
-    <div id="blocked-view" class="block-screen flex-center hidden">
+    <div id="blocked-view" class="block-screen hidden">
         <div class="block-icon">⚠️</div>
         <h1 id="blocked-title">UJIAN DIKUNCI</h1>
         <p id="blocked-msg" style="max-width: 500px; margin: 20px 0; font-size: 1.2rem;">
@@ -357,21 +359,43 @@
     </div>
 
     <script>
-        // --- GLOBAL STATE ---
-        const state = {
-    examLinks: {
-        'X': null,
-        'XI': null,
-        'XII IIS': null,
-        'XII IBB': null
-    },
-    durationMinutes: 90,
-    isPortalOpen: false,
-    cheatingStrikes: 0,
-    maxStrikes: 2,
-    timerInterval: null,
-    currentStudent: null
-};
+        // --- GLOBAL STATE (fixed and persisted to localStorage) ---
+        const STORAGE_KEY = 'cbt_state_v1';
+        const defaultState = {
+            examLinks: { 'X': null, 'XI': null, 'XII IIS': null, 'XII IBB': null },
+            durationMinutes: 90,
+            isPortalOpen: false,
+            cheatingStrikes: 0,
+            maxStrikes: 2,
+            timerInterval: null,
+            currentStudent: null
+        };
+
+        const loadState = () => {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return { ...defaultState };
+                const parsed = JSON.parse(raw);
+                return Object.assign({}, defaultState, parsed);
+            } catch (e) {
+                console.error('Failed to load state', e);
+                return { ...defaultState };
+            }
+        };
+
+        const saveState = (s) => {
+            try {
+                // store only needed parts
+                const toSave = {
+                    examLinks: s.examLinks,
+                    durationMinutes: s.durationMinutes,
+                    isPortalOpen: s.isPortalOpen
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+            } catch (e) { console.error('Failed to save state', e); }
+        };
+
+        const state = loadState();
 
         // --- APP LOGIC CONTROLLER ---
         const app = {
@@ -379,27 +403,60 @@
             init: function() {
                 this.bindEvents();
                 this.preventCheatingInputs();
+                this.syncUIFromState();
             },
 
-            // Event Listeners
             bindEvents: function() {
                 // Student Login
-                document.getElementById('student-form').addEventListener('submit', (e) => {
+                const studentForm = document.getElementById('student-form');
+                if (studentForm) studentForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleStudentLogin();
                 });
 
                 // Admin Login
-                document.getElementById('admin-form').addEventListener('submit', (e) => {
+                const adminForm = document.getElementById('admin-form');
+                if (adminForm) adminForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleAdminLogin();
                 });
+
+                // Also allow admin dashboard inputs to reflect saved links on load
+                window.addEventListener('storage', (e) => {
+                    // If another tab updates the state, reload local copy
+                    if (e.key === STORAGE_KEY) {
+                        const newState = loadState();
+                        Object.assign(state, newState);
+                        this.syncUIFromState();
+                    }
+                });
             },
 
-            // Navigasi View
+            syncUIFromState: function() {
+                // Update portal status text
+                const portalStatus = document.getElementById('portal-status');
+                if (portalStatus) {
+                    portalStatus.innerText = state.isPortalOpen ? 'Status: PORTAL TERBUKA (Siap Ujian)' : 'Status: PORTAL DITUTUP';
+                    portalStatus.style.color = state.isPortalOpen ? 'var(--primary-color)' : 'var(--danger)';
+                }
+
+                // fill admin inputs if any
+                const setIf = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ''; };
+                setIf('link-x', state.examLinks['X']);
+                setIf('link-xi', state.examLinks['XI']);
+                setIf('link-xii-iis', state.examLinks['XII IIS']);
+                setIf('link-xii-ibb', state.examLinks['XII IBB']);
+                const dur = document.getElementById('exam-duration'); if (dur) dur.value = state.durationMinutes;
+
+                // If student view and portal closed, show message
+                const loginMsg = document.getElementById('login-msg');
+                if (loginMsg) loginMsg.innerText = state.isPortalOpen ? '' : 'Portal ujian belum dibuka oleh panitia.';
+            },
+
             showView: function(viewId) {
                 document.querySelectorAll('body > div').forEach(div => div.classList.add('hidden'));
-                document.getElementById(viewId).classList.remove('hidden');
+                const el = document.getElementById(viewId);
+                if (el) el.classList.remove('hidden');
             },
 
             showAdminLogin: function() { this.showView('admin-login-view'); },
@@ -409,16 +466,35 @@
             handleAdminLogin: function() {
                 const u = document.getElementById('admin-user').value;
                 const p = document.getElementById('admin-pass').value;
-                
                 if (u === 'admin' && p === 'smadalawang20517826') {
                     this.showView('admin-dashboard-view');
+                    this.syncUIFromState();
                 } else {
                     alert('Username atau Password Salah!');
                 }
             },
 
-            adminLogout: function() {
-                this.showStudentLogin();
+            adminLogout: function() { this.showStudentLogin(); },
+
+            // Helper: robust link -> preview
+            extractFileId: function(link) {
+                if (!link) return null;
+                // /d/FILE_ID/
+                let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+                if (m) return m[1];
+                // id=FILE_ID
+                m = link.match(/id=([a-zA-Z0-9_-]{10,})/);
+                if (m) return m[1];
+                // uc?id=FILE_ID
+                m = link.match(/uc\?id=([a-zA-Z0-9_-]{10,})/);
+                if (m) return m[1];
+                return null;
+            },
+
+            toPreview: function(link) {
+                const id = this.extractFileId(link);
+                if (!id) return null;
+                return `https://drive.google.com/file/d/${id}/preview`;
             },
 
             startExamMode: function() {
@@ -428,51 +504,44 @@
                 const linkXII_IBB = document.getElementById('link-xii-ibb').value;
                 const durationInput = document.getElementById('exam-duration');
 
-                // Helper: Convert GDrive View link to Preview link for embedding
-                const formatLink = (link) => {
-    if (!link) return null;
-
-    // Ambil FILE ID dari berbagai format link
-    const idMatch = link.match(/\/d\/(.*?)\//) ||
-                    link.match(/id=(.*?)(?:&|$)/);
-
-    if (!idMatch) return null;
-
-    const fileId = idMatch[1];
-
-    // Kembalikan format embed-iframe Google Drive
-    return `https://drive.google.com/file/d/${fileId}/preview`;
-};
-
                 state.examLinks = {
-                    'X': formatLink(linkX),
-                    'XI': formatLink(linkXI),
-                    'XII IIS': formatLink(linkXII_IIS),
-                    'XII IBB': formatLink(linkXII_IBB)
+                    'X': this.toPreview(linkX),
+                    'XI': this.toPreview(linkXI),
+                    'XII IIS': this.toPreview(linkXII_IIS),
+                    'XII IBB': this.toPreview(linkXII_IBB)
                 };
 
-                state.durationMinutes = parseInt(durationInput.value);
+                state.durationMinutes = parseInt(durationInput.value) || 90;
                 state.isPortalOpen = true;
-                localStorage.setItem("portalOpen", "true");
+
+                saveState(state);
+                // Notify other tabs (storage event will fire there)
+                localStorage.setItem('cbt_last_update', Date.now());
 
                 document.getElementById('portal-status').innerText = "Status: PORTAL TERBUKA (Siap Ujian)";
                 document.getElementById('portal-status').style.color = "var(--primary-color)";
-                
-                alert('Portal Ujian Dibuka.\nLink soal telah disimpan untuk masing-masing kelas.');
-                this.showStudentLogin(); 
+                alert('Portal Ujian Dibuka. Link soal telah disimpan untuk masing-masing kelas.');
+                this.showStudentLogin();
+                this.syncUIFromState();
             },
 
             closePortal: function() {
                 state.isPortalOpen = false;
-                localStorage.setItem("portalOpen", "false");
+                saveState(state);
+                localStorage.setItem('cbt_last_update', Date.now());
                 document.getElementById('portal-status').innerText = "Status: PORTAL DITUTUP";
                 document.getElementById('portal-status').style.color = "var(--danger)";
                 alert('Portal ditutup. Siswa tidak bisa login.');
+                this.showStudentLogin();
+                this.syncUIFromState();
             },
 
             // --- STUDENT LOGIC ---
             handleStudentLogin: function() {
-                if (!state.isPortalOpen && localStorage.getItem("portalOpen") !== "true") {
+                // reload state from storage at moment of login (in case admin opened portal elsewhere)
+                Object.assign(state, loadState());
+
+                if (!state.isPortalOpen) {
                     document.getElementById('login-msg').innerText = "Portal ujian belum dibuka oleh panitia.";
                     return;
                 }
@@ -481,12 +550,9 @@
                 const kelas = document.getElementById('student-class').value;
 
                 state.currentStudent = { name, kelas };
-                
                 const confirmExam = confirm(`Halo ${name} (${kelas}).\nUjian akan segera dimulai.\n\nPERATURAN:\n1. Dilarang membuka tab lain.\n2. Dilarang keluar dari layar penuh.\n3. Sistem akan mengunci jika melanggar.\n\nSiap?`);
 
-                if (confirmExam) {
-                    this.startExamSession();
-                }
+                if (confirmExam) this.startExamSession();
             },
 
             startExamSession: function() {
@@ -526,6 +592,8 @@
                 let timer = durationSeconds, minutes, seconds, hours;
                 const display = document.getElementById('timer-display');
 
+                if (state.timerInterval) clearInterval(state.timerInterval);
+
                 state.timerInterval = setInterval(() => {
                     hours = parseInt(timer / 3600, 10);
                     minutes = parseInt((timer % 3600) / 60, 10);
@@ -547,16 +615,11 @@
                 if (!force && !confirm("Apakah Anda yakin ingin mengakhiri ujian? Anda tidak bisa kembali.")) return;
 
                 clearInterval(state.timerInterval);
-                
-                // Show Done Screen
                 const blockView = document.getElementById('blocked-view');
                 document.getElementById('blocked-title').innerText = "UJIAN SELESAI";
                 document.getElementById('blocked-msg').innerText = "Terima kasih telah mengerjakan ujian. Silakan lapor ke pengawas dan kumpulkan Lembar Jawaban (LJK).";
                 document.querySelector('#blocked-view .block-icon').innerText = "✅";
-                
                 this.showView('blocked-view');
-                
-                // Exit fullscreen
                 if (document.exitFullscreen) document.exitFullscreen().catch(err => {});
             },
 
@@ -581,7 +644,6 @@
                 if (!blockedView.classList.contains('hidden')) return; 
 
                 state.cheatingStrikes++;
-                
                 if (state.cheatingStrikes > state.maxStrikes) {
                     this.lockExam(`Akses ditutup otomatis karena Anda meninggalkan halaman ujian sebanyak 3 kali.\n(${activity})`);
                 } else {
@@ -591,7 +653,7 @@
 
             preventCheatingInputs: function() {
                 document.addEventListener('contextmenu', event => event.preventDefault());
-                document.addEventListener('copy', event => { event.preventDefault(); alert("Copy dinonaktifkan"); });
+                document.addEventListener('copy', event => { event.preventDefault(); });
                 document.addEventListener('selectstart', event => event.preventDefault());
 
                 document.onkeydown = function(e) {
@@ -605,13 +667,8 @@
         };
 
         // Start App
-        window.onload = () => app.init();
+        window.addEventListener('DOMContentLoaded', () => app.init());
 
     </script>
 </body>
 </html>
-
-
-
-
-
