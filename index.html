@@ -307,7 +307,7 @@
                                 <button onclick="app.startExamMode()" class="btn-primary">Simpan & Buka Portal</button>
                                 <button onclick="app.closePortal()" class="btn-danger">Tutup Portal</button>
                             </div>
-                            <p id="portal-status" style="margin-top: 10px; font-weight: bold; color: #666;">Status: Menunggu Konfigurasi</p>
+                            <p id="portal-status" style="font-weight:bold; animation: pulse 1.2s infinite" style="margin-top: 10px; font-weight: bold; color: #666;">Status: Menunggu Konfigurasi</p>
                         </div>
                     </div>
 
@@ -685,7 +685,55 @@ Jika terjadi lagi, ujian akan dikunci.`);
             }
         };
 
+        // --- AUTO RELOAD FOR STUDENTS WHEN PORTAL OPENS ---
+        setInterval(() => {
+            const latest = loadState();
+            if (latest.isPortalOpen !== state.isPortalOpen) {
+                Object.assign(state, latest);
+                app.syncUIFromState();
+            }
+        }, 2000);
+
         window.addEventListener('DOMContentLoaded', () => app.init());
+    
+
+    /* LIVE INDICATOR */
+    <style>
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
+
+    .live-dot {
+        width: 10px;
+        height: 10px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+        animation: pulse 1s infinite;
+    }
+    </style>
+
+    <script>
+    // --- AUTO REFRESH SISI SISWA (tambah indikator live) ---
+    const liveIndicator = () => {
+        const text = state.isPortalOpen ? 'Status: PORTAL TERBUKA (LIVE)' : 'Status: PORTAL DITUTUP';
+        const el = document.getElementById('portal-status');
+        if (el) el.innerHTML = `<span class='live-dot'></span>${text}`;
+    };
+
+    setInterval(() => {
+        const latest = loadState();
+        if (latest.isPortalOpen !== state.isPortalOpen) {
+            Object.assign(state, latest);
+            app.syncUIFromState();
+            liveIndicator();
+        }
+    }, 1500);
+
+    liveIndicator();
     </script>
 </body>
 </html>
