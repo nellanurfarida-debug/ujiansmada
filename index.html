@@ -432,13 +432,19 @@
 
                 // Helper: Convert GDrive View link to Preview link for embedding
                 const formatLink = (link) => {
-                    if (!link) return null;
-                    // Jika link adalah link 'view' biasa, ubah ke 'preview' agar bisa di-embed
-                    if (link.includes('drive.google.com') && link.includes('/view')) {
-                        return link.replace('/view', '/preview');
-                    }
-                    return link;
-                };
+    if (!link) return null;
+
+    // Ambil FILE ID dari berbagai format link
+    const idMatch = link.match(/\/d\/(.*?)\//) ||
+                    link.match(/id=(.*?)(?:&|$)/);
+
+    if (!idMatch) return null;
+
+    const fileId = idMatch[1];
+
+    // Kembalikan format embed-iframe Google Drive
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+};
 
                 state.examLinks = {
                     'X': formatLink(linkX),
@@ -604,5 +610,6 @@
     </script>
 </body>
 </html>
+
 
 
