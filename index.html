@@ -1,64 +1,96 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBT SMA Plus Darussalam</title>
+
     <style>
-        /* --- CSS RESET & VARIABLES --- */
-        :root{
-            --primary-color:#10b981;
-            --primary-dark:#059669;
-            --text-color:#1f2937;
-            --bg-color:#f3f4f6;
-            --white:#ffffff;
-            --danger:#ef4444;
+        :root {
+            --primary-color: #10b981;
+            --primary-dark: #059669;
+            --bg-color: #f3f4f6;
+            --danger: #ef4444;
         }
-        *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-        body{background:var(--bg-color);color:var(--text-color);min-height:100vh}
-        .hidden{display:none!important}
-        .flex-center{display:flex;justify-content:center;align-items:center}
-        .full-screen{width:100%;min-height:100vh}
-        .container{max-width:500px;margin:0 auto;padding:20px}
-        button{cursor:pointer;padding:12px 20px;border:none;border-radius:8px;font-weight:600;transition:0.15s}
-        .btn-primary{background:var(--primary-color);color:#fff;width:100%}
-        .btn-primary:hover{background:var(--primary-dark)}
-        .btn-danger{background:var(--danger);color:#fff}
-        input,select{width:100%;padding:12px;margin-bottom:15px;border:1px solid #d1d5db;border-radius:8px;outline:none}
-        input:focus,select:focus{border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(16,185,129,0.15)}
-        label{display:block;margin-bottom:5px;font-weight:500}
 
-        .login-card{background:var(--white);padding:36px;border-radius:14px;box-shadow:0 10px 25px rgba(0,0,0,0.08);width:100%;max-width:420px;text-align:center}
-        .school-logo{font-size:3rem;color:var(--primary-color);margin-bottom:8px}
-        .admin-link{position:fixed;bottom:10px;left:10px;font-size:0.7rem;color:#ccc;text-decoration:none;cursor:pointer}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .admin-dashboard{background:var(--white);padding:26px;border-radius:12px;max-width:1000px;width:95%;margin:20px auto;box-shadow:0 4px 6px rgba(0,0,0,0.05);min-height:86vh;display:flex;flex-direction:column}
-        .dashboard-content{overflow-y:auto;flex:1;padding-right:10px}
-        .dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;border-bottom:2px solid var(--bg-color);padding-bottom:12px}
-        .monitor-panel{background:#f9fafb;padding:15px;border-radius:8px;border:1px dashed #ccc;height:100%}
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+        }
 
-        .exam-layout{display:flex;flex-direction:column;min-height:100vh}
-        .exam-header{background:var(--primary-color);color:white;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 4px rgba(0,0,0,0.08)}
-        .timer-box{background:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-weight:bold;font-family:monospace}
-        .exam-body{flex:1;background:#525659;display:flex;justify-content:center;overflow:hidden;min-height:0}
-        iframe.pdf-viewer{width:100%;height:100%;border:0;flex:1}
+        .hidden { display: none !important; }
+        .flex-center { display: flex; justify-content: center; align-items: center; }
 
-        .watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:5rem;opacity:0.05;pointer-events:none;z-index:999}
+        .login-card {
+            width: 95%;
+            max-width: 420px;
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
 
-        .block-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);color:white;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-        .block-icon{font-size:4.5rem;color:var(--danger);margin-bottom:18px}
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
 
-        /* LIVE INDICATOR */
-        @keyframes pulse {0%{opacity:1}50%{opacity:0.45}100%{opacity:1}}
-        .live-dot{width:10px;height:10px;background:var(--primary-color);border-radius:50%;display:inline-block;margin-right:8px;animation:pulse 1s infinite}
+        button {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+        }
 
-        /* mobile adjustments */
-        @media (max-width:640px){
-            .login-card{padding:20px}
-            .admin-dashboard{padding:16px}
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .btn-danger { background: var(--danger); color: white; }
+
+        /* Exam */
+        .exam-header {
+            background: var(--primary-color);
+            padding: 10px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* LIVE Indicator */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: .4; }
+            100% { opacity: 1; }
+        }
+
+        .live-dot {
+            width: 9px;
+            height: 9px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1s infinite;
+            margin-right: 6px;
         }
     </style>
 </head>
+
 <body>
 
     <!-- STUDENT LOGIN -->
@@ -510,3 +542,4 @@ Siap?`);
     </script>
 </body>
 </html>
+
