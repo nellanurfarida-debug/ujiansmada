@@ -1,545 +1,391 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT SMA Plus Darussalam</title>
-
-    <style>
-        :root {
-            --primary-color: #10b981;
-            --primary-dark: #059669;
-            --bg-color: #f3f4f6;
-            --danger: #ef4444;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg-color);
-            min-height: 100vh;
-        }
-
-        .hidden { display: none !important; }
-        .flex-center { display: flex; justify-content: center; align-items: center; }
-
-        .login-card {
-            width: 95%;
-            max-width: 420px;
-            background: white;
-            padding: 35px;
-            border-radius: 16px;
-            box-shadow: 0 6px 25px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
-        }
-
-        button {
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            width: 100%;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-
-        .btn-danger { background: var(--danger); color: white; }
-
-        /* Exam */
-        .exam-header {
-            background: var(--primary-color);
-            padding: 10px 20px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* LIVE Indicator */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: .4; }
-            100% { opacity: 1; }
-        }
-
-        .live-dot {
-            width: 9px;
-            height: 9px;
-            background: #10b981;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 1s infinite;
-            margin-right: 6px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CBT SMA Plus Darussalam - Final (No Portal)</title>
+  <style>
+    :root{--primary-color:#10b981;--primary-dark:#059669;--text:#1f2937;--bg:#f3f4f6;--white:#ffffff;--danger:#ef4444}
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma, Geneva, Verdana, sans-serif}
+    body{background:var(--bg);color:var(--text);min-height:100vh}
+    .hidden{display:none!important}.flex-center{display:flex;justify-content:center;align-items:center}
+    .full-screen{width:100%;min-height:100vh}
+    .login-card{background:var(--white);padding:32px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.08);max-width:420px;text-align:center}
+    button{cursor:pointer;padding:10px 16px;border-radius:8px;border:none;font-weight:600}
+    .btn-primary{background:var(--primary-color);color:#fff;width:100%}
+    .btn-danger{background:var(--danger);color:#fff}
+    input,select{width:100%;padding:10px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:8px}
+    .admin-footer{font-size:0.85rem;color:#6b7280;margin-top:12px}
+    .admin-area{margin-top:16px;padding-top:12px;border-top:2px dashed #f3f4f6}
+    .admin-btns{display:flex;gap:8px}
+    .admin-dashboard{max-width:960px;margin:20px auto;padding:18px;background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
+    .dashboard-grid{display:grid;grid-template-columns:60% 40%;gap:16px}
+    .monitor-panel{background:#f9fafb;padding:12px;border-radius:8px;border:1px dashed #e5e7eb}
+    .exam-layout{display:flex;flex-direction:column;min-height:100vh}
+    .exam-header{background:var(--primary-color);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+    .timer-box{background:rgba(255,255,255,0.18);padding:6px 12px;border-radius:18px;font-family:monospace;font-weight:700}
+    .exam-body{flex:1;background:#525659;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    iframe.pdf-viewer{flex:1;width:100%;height:100%;border:0}
+    .watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-45deg);font-size:4.5rem;opacity:0.05;pointer-events:none;z-index:10}
+    .monitor-list{list-style:none;padding:0;margin:0}
+    .monitor-list li{padding:8px;border-bottom:1px solid #eee;font-size:0.95rem}
+    .block-screen{position:fixed;inset:0;background:rgba(0,0,0,0.95);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
+    .small{font-size:0.85rem;color:#666}
+    .live-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;background:var(--primary-color);animation:pulse 1s infinite}
+    @keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+    /* ensure iframe can shrink on mobile */
+    .iframe-wrap{flex:1;min-height:0;display:flex;flex-direction:column}
+  </style>
 </head>
-
 <body>
 
-    <!-- STUDENT LOGIN -->
-    <div id="student-login-view" class="full-screen flex-center">
-        <div class="login-card">
-            <div class="school-logo">🏫</div>
-            <h2 style="margin-bottom:8px;color:var(--primary-color)">CBT SMA Plus Darussalam</h2>
-            <p style="margin-bottom:18px;font-size:0.9rem">Asesmen Sumatif Akhir Semester Ganjil</p>
+  <!-- STUDENT LOGIN VIEW -->
+  <div id="student-login-view" class="full-screen flex-center">
+    <div class="login-card">
+      <div style="font-size:2.4rem;color:var(--primary-color)">🏫</div>
+      <h2 style="color:var(--primary-color);margin:8px 0">CBT SMA Plus Darussalam</h2>
+      <p class="small" style="margin-bottom:16px">Asesmen Sumatif — Gunakan nama lengkap. Soal tampil setelah tekan MULAI.</p>
 
-            <form id="student-form">
-                <div style="text-align:left">
-                    <label>Nama Lengkap</label>
-                    <input id="student-name" type="text" placeholder="Masukkan nama lengkap" required />
-                </div>
-                <div style="text-align:left">
-                    <label>Kelas</label>
-                    <select id="student-class" required>
-                        <option value="" disabled selected>Pilih Kelas</option>
-                        <option value="X">Kelas X</option>
-                        <option value="XI">Kelas XI</option>
-                        <option value="XII IIS">Kelas XII IIS</option>
-                        <option value="XII IBB">Kelas XII IBB</option>
-                    </select>
-                </div>
+      <form id="student-form">
+        <label>Nama Lengkap</label>
+        <input id="student-name" type="text" placeholder="Masukkan nama lengkap" required>
 
-                <button type="submit" class="btn-primary">MULAI UJIAN</button>
-            </form>
+        <label>Kelas</label>
+        <select id="student-class" required>
+          <option value="" disabled selected>Pilih Kelas</option>
+          <option value="X">Kelas X</option>
+          <option value="XI">Kelas XI</option>
+          <option value="XII IIS">Kelas XII IIS</option>
+          <option value="XII IBB">Kelas XII IBB</option>
+        </select>
 
-            <div id="login-msg" style="margin-top:10px;color:var(--danger)"></div>
+        <button type="submit" class="btn-primary">MULAI UJIAN</button>
+      </form>
 
-            <div style="margin-top:18px;padding-top:12px;border-top:2px dashed #f3f4f6">
-                <p style="font-size:0.8rem;color:#9ca3af;margin-bottom:10px">Area Terbatas</p>
-                <button onclick="app.showAdminLogin()" style="background:#4b5563;color:#fff;width:100%">🔐 Login Panitia</button>
-            </div>
-        </div>
+      <div id="login-msg" class="small" style="margin-top:10px;color:var(--danger)"></div>
+
+      <div class="admin-area">
+        <div class="small" style="color:#9ca3af;margin-bottom:8px">Area Panitia</div>
+        <button id="btn-admin" style="background:#374151;color:#fff;width:100%">🔐 Login Panitia</button>
+      </div>
     </div>
+  </div>
 
-    <!-- ADMIN LOGIN -->
-    <div id="admin-login-view" class="full-screen flex-center hidden" style="background:#e5e7eb">
-        <div class="login-card">
-            <h3>Login Panitia</h3>
-            <br />
-            <form id="admin-form">
-                <input id="admin-user" type="text" placeholder="Username" required />
-                <input id="admin-pass" type="password" placeholder="Password" required />
-                <button type="submit" class="btn-primary" style="background:#374151">Masuk</button>
-            </form>
-            <br />
-            <button onclick="app.showStudentLogin()" style="background:none;color:#666;text-decoration:underline">Kembali</button>
-        </div>
+  <!-- ADMIN LOGIN -->
+  <div id="admin-login-view" class="full-screen flex-center hidden">
+    <div class="login-card">
+      <h3>Login Panitia</h3>
+      <form id="admin-form">
+        <input id="admin-user" placeholder="Username" required>
+        <input id="admin-pass" type="password" placeholder="Password" required>
+        <button type="submit" class="btn-primary" style="background:#374151">Masuk</button>
+      </form>
+      <div class="admin-footer"><button id="btn-back-student" style="background:none;border:none;color:#666;text-decoration:underline;margin-top:8px">Kembali</button></div>
     </div>
+  </div>
 
-    <!-- ADMIN DASHBOARD -->
-    <div id="admin-dashboard-view" class="full-screen hidden" style="background:#e5e7eb">
-        <div class="admin-dashboard">
-            <div class="dashboard-header">
-                <h2>⚙️ Panel Kontrol Ujian</h2>
-                <button onclick="app.adminLogout()" class="btn-danger" style="width:auto">Keluar</button>
-            </div>
-
-            <div class="dashboard-content">
-                <div style="display:grid;grid-template-columns:60% 40%;gap:18px">
-                    <div>
-                        <div style="background:#f0fdf4;padding:14px;border-radius:8px;border:1px solid #bbf7d0;margin-bottom:16px">
-                            <h4 style="color:#166534">📝 1. Input Link Soal (Google Drive)</h4>
-                            <p style="font-size:0.8rem;color:#166534;margin-bottom:10px">Pastikan akses link Google Drive diatur ke <b>Anyone with the link</b>.</p>
-
-                            <div style="margin-bottom:8px"><label style="font-size:0.9rem">Link Soal Kelas X</label><input id="link-x" type="text" placeholder="Tempel link Google Drive di sini..." /></div>
-                            <div style="margin-bottom:8px"><label style="font-size:0.9rem">Link Soal Kelas XI</label><input id="link-xi" type="text" placeholder="Tempel link Google Drive di sini..." /></div>
-                            <div style="margin-bottom:8px"><label style="font-size:0.9rem">Link Soal Kelas XII IIS</label><input id="link-xii-iis" type="text" placeholder="Tempel link Google Drive di sini..." /></div>
-                            <div style="margin-bottom:8px"><label style="font-size:0.9rem">Link Soal Kelas XII IBB</label><input id="link-xii-ibb" type="text" placeholder="Tempel link Google Drive di sini..." /></div>
-                        </div>
-
-                        <div style="background:#fff;border:1px solid #e5e7eb;padding:14px;border-radius:8px">
-                            <h4>⏱️ 2. Durasi Ujian (Menit)</h4>
-                            <input id="exam-duration" type="number" value="90" min="1" />
-
-                            <h4 style="margin-top:10px">🚀 3. Kontrol Portal</h4>
-                            <div style="display:flex;gap:10px;margin-top:8px">
-                                <button onclick="app.startExamMode()" class="btn-primary">Simpan & Buka Portal</button>
-                                <button onclick="app.closePortal()" class="btn-danger">Tutup Portal</button>
-                            </div>
-
-                            <p id="portal-status" style="margin-top:12px;font-weight:bold;color:#666"><span class="live-dot" style="display:none"></span>Status: Menunggu Konfigurasi</p>
-                        </div>
-                    </div>
-
-                    <div class="monitor-panel">
-                        <h4>📡 Monitoring Siswa (Live)</h4>
-                        <p style="font-size:0.8rem;color:#666">Status siswa yang sedang login (Simulasi).</p>
-                        <ul id="student-monitor-list" style="list-style:none;margin-top:10px;font-size:0.9rem;padding-left:0">
-                            <li style="padding:6px;border-bottom:1px solid #eee;color:#999">Belum ada siswa aktif.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+  <!-- ADMIN DASHBOARD (No portal gating: saving links directly makes them available) -->
+  <div id="admin-dashboard-view" class="full-screen hidden">
+    <div class="admin-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3>⚙️ Panel Panitia</h3>
+        <div style="display:flex;gap:8px">
+          <button id="btn-logout" class="btn-danger" style="width:auto">Keluar</button>
         </div>
-    </div>
+      </div>
 
-    <!-- EXAM VIEW -->
-    <div id="exam-view" class="exam-layout hidden">
-        <div id="watermark-name" class="watermark">SISWA</div>
-
-        <div class="exam-header">
-            <div>
-                <h3 id="header-student-name">Nama Siswa</h3>
-                <span id="header-student-class" style="font-size:0.85rem;opacity:0.9">Kelas X</span>
+      <div class="dashboard-grid">
+        <div>
+          <div style="background:#f0fdf4;padding:12px;border-radius:8px;border:1px solid #bbf7d0">
+            <h4 style="color:#166534;margin:0 0 8px 0">📝 Input Link Soal (Google Drive)</h4>
+            <div style="margin-bottom:8px">
+              <label>Link Soal Kelas X</label>
+              <input id="link-x" placeholder="https://drive.google.com/...">
             </div>
-            <div class="timer-box" id="timer-display">00:00:00</div>
-            <button onclick="app.finishExam()" class="btn-danger" style="width:auto;padding:8px 14px">Selesai</button>
+            <div style="margin-bottom:8px">
+              <label>Link Soal Kelas XI</label>
+              <input id="link-xi" placeholder="https://drive.google.com/...">
+            </div>
+            <div style="margin-bottom:8px">
+              <label>Link Soal Kelas XII IIS</label>
+              <input id="link-xii-iis" placeholder="https://drive.google.com/...">
+            </div>
+            <div style="margin-bottom:8px">
+              <label>Link Soal Kelas XII IBB</label>
+              <input id="link-xii-ibb" placeholder="https://drive.google.com/...">
+            </div>
+          </div>
+
+          <div style="margin-top:12px;background:#fff;padding:12px;border-radius:8px;border:1px solid #e5e7eb">
+            <h4>⏱ Durasi Ujian (menit)</h4>
+            <input id="exam-duration" type="number" value="90" min="1">
+            <div class="admin-btns" style="margin-top:8px">
+              <button id="btn-save" class="btn-primary">Simpan & Aktifkan Soal</button>
+              <button id="btn-clear" class="btn-danger">Hapus Soal</button>
+            </div>
+            <p id="save-msg" class="small" style="margin-top:8px;color:#666">Perubahan tersimpan di browser ini (local).</p>
+          </div>
         </div>
 
-        <div class="exam-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
-            <iframe id="pdf-frame" class="pdf-viewer" src=""></iframe>
-            <div id="no-pdf-msg" class="flex-center hidden" style="width:100%;color:#fff;flex-direction:column;text-align:center;padding:20px">
-                <h3>Soal Tidak Ditemukan</h3>
-                <p style="margin-top:10px">Mohon lapor ke pengawas bahwa soal untuk kelas Anda belum diupload.</p>
-            </div>
+        <div class="monitor-panel">
+          <h4>📡 Monitoring Siswa (Live)</h4>
+          <p class="small" style="margin-bottom:8px">Siswa yang menekan MULAI akan muncul di sini.</p>
+          <ul id="student-monitor-list" class="monitor-list">
+            <li style="color:#999">Belum ada siswa aktif.</li>
+          </ul>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXAM VIEW -->
+  <div id="exam-view" class="exam-layout hidden">
+    <div id="watermark-name" class="watermark">SISWA</div>
+    <div class="exam-header">
+      <div>
+        <div id="header-student-name" style="font-weight:700">Nama Siswa</div>
+        <div id="header-student-class" class="small">Kelas X</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="timer-box" id="timer-display">00:00:00</div>
+        <button id="btn-finish" class="btn-danger" style="padding:8px 12px">Selesai</button>
+      </div>
     </div>
 
-    <!-- BLOCKED / DONE -->
-    <div id="blocked-view" class="block-screen hidden">
-        <div class="block-icon">⚠️</div>
-        <h1 id="blocked-title">UJIAN DIKUNCI</h1>
-        <p id="blocked-msg" style="max-width:560px;margin:16px 0;font-size:1.05rem">Anda terdeteksi melakukan kecurangan dengan meninggalkan halaman ujian lebih dari batas yang ditentukan.</p>
-        <button onclick="location.reload()" style="background:#fff;color:#000;margin-top:12px;padding:10px 18px;border-radius:8px">Kembali ke Awal</button>
+    <div class="exam-body">
+      <div class="iframe-wrap">
+        <iframe id="pdf-frame" class="pdf-viewer" src=""></iframe>
+      </div>
+      <div id="no-pdf-msg" class="flex-center hidden" style="color:white;padding:16px">Soal tidak ditemukan. Laporkan ke pengawas.</div>
     </div>
+  </div>
 
-    <!-- SCRIPT -->
-    <script>
-    // --- GLOBAL STATE & STORAGE ---
-    const STORAGE_KEY = 'cbt_state_v1';
-    const defaultState = {
-        examLinks: { 'X': null, 'XI': null, 'XII IIS': null, 'XII IBB': null },
-        durationMinutes: 90,
-        isPortalOpen: false,
-        cheatingStrikes: 0,
-        maxStrikes: 2,
-        timerInterval: null,
-        currentStudent: null,
-        monitor: []
-    };
+  <!-- BLOCK / DONE -->
+  <div id="blocked-view" class="block-screen hidden">
+    <div style="font-size:3rem;margin-bottom:8px" id="block-icon">⚠️</div>
+    <h2 id="blocked-title">UJIAN DIKUNCI</h2>
+    <p id="blocked-msg" style="max-width:560px;text-align:center;margin:12px 0">Aktivitas mencurigakan terdeteksi.</p>
+    <button id="btn-reload" style="background:#fff;color:#000;padding:8px 12px">Kembali ke Awal</button>
+  </div>
 
-    function loadState(){
-        try{
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if(!raw) return {...defaultState};
-            const parsed = JSON.parse(raw);
-            return Object.assign({}, defaultState, parsed);
-        }catch(e){
-            console.error('loadState err', e);
-            return {...defaultState};
-        }
+<script>
+/* State stored in localStorage; removing portal gating: students can start any time and links saved by admin are used */
+const STORAGE_KEY = 'cbt_state_final_v1';
+const defaultState = {
+  examLinks: {'X':null,'XI':null,'XII IIS':null,'XII IBB':null},
+  durationMinutes: 90,
+  monitor: []
+};
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(defaultState));
+    const parsed = JSON.parse(raw);
+    return Object.assign({}, defaultState, parsed);
+  }catch(e){
+    console.error(e);
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+}
+function saveState(s){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      examLinks: s.examLinks,
+      durationMinutes: s.durationMinutes,
+      monitor: s.monitor || []
+    }));
+  }catch(e){console.error(e)}
+}
+
+let state = loadState();
+
+/* Utils to extract Google Drive file id and produce preview link */
+function extractFileId(link){
+  if(!link) return null;
+  let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  if(m) return m[1];
+  m = link.match(/id=([a-zA-Z0-9_-]{10,})/);
+  if(m) return m[1];
+  m = link.match(/uc\?id=([a-zA-Z0-9_-]{10,})/);
+  if(m) return m[1];
+  return null;
+}
+function toPreview(link){
+  const id = extractFileId(link);
+  if(!id) return null;
+  return 'https://drive.google.com/file/d/' + id + '/preview';
+}
+
+/* App controller */
+const app = {
+  init(){
+    this.bind();
+    this.syncUI();
+    // poll for changes saved from other tab (so admin can save and students see updated links)
+    setInterval(()=>{ const latest=loadState(); if(JSON.stringify(latest)!==JSON.stringify(state)){ state=latest; this.syncUI(); } }, 1200);
+  },
+  bind(){
+    document.getElementById('btn-admin').addEventListener('click', ()=> this.show('admin-login-view'));
+    document.getElementById('btn-back-student').addEventListener('click', ()=> this.show('student-login-view'));
+    document.getElementById('btn-logout').addEventListener('click', ()=> { this.show('student-login-view'); });
+
+    document.getElementById('admin-form').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const u = document.getElementById('admin-user').value.trim();
+      const p = document.getElementById('admin-pass').value.trim();
+      if(u==='admin' && p==='smadalawang20517826'){ this.show('admin-dashboard-view'); this.syncUI(); } else alert('Username atau Password Salah!');
+    });
+
+    document.getElementById('btn-save').addEventListener('click', ()=>{
+      state.examLinks['X'] = toPreview(document.getElementById('link-x').value.trim());
+      state.examLinks['XI'] = toPreview(document.getElementById('link-xi').value.trim());
+      state.examLinks['XII IIS'] = toPreview(document.getElementById('link-xii-iis').value.trim());
+      state.examLinks['XII IBB'] = toPreview(document.getElementById('link-xii-ibb').value.trim());
+      state.durationMinutes = parseInt(document.getElementById('exam-duration').value) || 90;
+      saveState(state);
+      document.getElementById('save-msg').innerText = 'Tersimpan. Siswa akan menggunakan link terbaru.';
+      // trigger storage change for other tabs
+      localStorage.setItem('cbt_last_update', Date.now());
+      this.syncUI();
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', ()=>{
+      state.examLinks = {'X':null,'XI':null,'XII IIS':null,'XII IBB':null};
+      saveState(state);
+      this.syncUI();
+      alert('Semua link soal dihapus.');
+    });
+
+    document.getElementById('student-form').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      this.handleStudentStart();
+    });
+
+    document.getElementById('btn-finish').addEventListener('click', ()=> this.finishExam());
+    document.getElementById('btn-reload').addEventListener('click', ()=> location.reload());
+  },
+
+  show(id){
+    document.querySelectorAll('body > div').forEach(d=>d.classList.add('hidden'));
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('hidden');
+  },
+
+  syncUI(){
+    // fill admin inputs
+    const setIf = (id,v)=>{ const e=document.getElementById(id); if(e) e.value = v||''; };
+    setIf('link-x', state.examLinks['X']);
+    setIf('link-xi', state.examLinks['XI']);
+    setIf('link-xii-iis', state.examLinks['XII IIS']);
+    setIf('link-xii-ibb', state.examLinks['XII IBB']);
+    const d=document.getElementById('exam-duration'); if(d) d.value = state.durationMinutes||90;
+
+    // render monitor
+    const ul = document.getElementById('student-monitor-list');
+    if(!ul) return;
+    ul.innerHTML = '';
+    if(!state.monitor || state.monitor.length===0){
+      ul.innerHTML = '<li style="color:#999">Belum ada siswa aktif.</li>';
+      return;
+    }
+    state.monitor.slice().reverse().forEach(item=>{
+      const li=document.createElement('li');
+      li.innerText = item.name + ' — ' + item.kelas + ' ('+ item.time +')';
+      ul.appendChild(li);
+    });
+  },
+
+  handleStudentStart(){
+    // no portal gating: students can start anytime
+    const name = document.getElementById('student-name').value.trim();
+    const kelas = document.getElementById('student-class').value;
+    const loginMsg = document.getElementById('login-msg');
+    if(!name || !kelas){ loginMsg.innerText = 'Nama dan kelas wajib diisi.'; return; }
+    loginMsg.innerText = '';
+
+    state.currentStudent = {name,kelas};
+    // add to monitor
+    const now=new Date();
+    const t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    state.monitor = state.monitor || [];
+    state.monitor.push({name,kelas,time:t});
+    if(state.monitor.length>100) state.monitor.shift();
+    saveState(state);
+    localStorage.setItem('cbt_last_update', Date.now());
+    this.syncUI();
+
+    const confirmExam = confirm(`Halo ${name} (${kelas}).\nUjian akan segera dimulai.\n\nPERATURAN:\n1. Dilarang membuka tab lain.\n2. Dilarang keluar dari layar penuh.\n\nSiap?`);
+    if(confirmExam) this.startExamSession();
+  },
+
+  startExamSession(){
+    const s = state.currentStudent;
+    if(!s) return;
+    this.show('exam-view');
+    document.getElementById('header-student-name').innerText = s.name;
+    document.getElementById('header-student-class').innerText = s.kelas;
+    document.getElementById('watermark-name').innerText = s.name + ' - ' + s.kelas;
+
+    const iframe = document.getElementById('pdf-frame');
+    const examUrl = state.examLinks[s.kelas];
+    if(examUrl){
+      iframe.src = examUrl;
+      document.getElementById('no-pdf-msg').classList.add('hidden');
+    } else {
+      iframe.src = '';
+      document.getElementById('no-pdf-msg').classList.remove('hidden');
     }
 
-    function saveState(s){
-        try{
-            const toSave = {
-                examLinks: s.examLinks,
-                durationMinutes: s.durationMinutes,
-                isPortalOpen: s.isPortalOpen,
-                monitor: s.monitor || []
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-        }catch(e){ console.error('saveState err', e); }
+    this.startTimer((state.durationMinutes||90)*60);
+    this.activateAntiCheat();
+  },
+
+  startTimer(seconds){
+    const display = document.getElementById('timer-display');
+    if(this._timer) clearInterval(this._timer);
+    let t = seconds;
+    this._timer = setInterval(()=>{
+      const h = Math.floor(t/3600);
+      const m = Math.floor((t%3600)/60);
+      const s = t%60;
+      display.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      if(t-- <= 0){ clearInterval(this._timer); this.finishExam(true); }
+    },1000);
+  },
+
+  finishExam(force=false){
+    if(!force && !confirm('Akhiri ujian?')) return;
+    if(this._timer) clearInterval(this._timer);
+    document.getElementById('blocked-title').innerText = 'UJIAN SELESAI';
+    document.getElementById('blocked-msg').innerText = 'Terima kasih. Silakan lapor ke pengawas.';
+    document.getElementById('block-icon').innerText = '✅';
+    this.show('blocked-view');
+  },
+
+  activateAntiCheat(){
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) this.handleStrike('Membuka tab lain'); });
+  },
+
+  handleStrike(activity){
+    state.cheatingStrikes = (state.cheatingStrikes||0)+1;
+    if(state.cheatingStrikes > 2){
+      this.lockExam('Ditutup karena pelanggaran berulang: '+activity);
+    } else {
+      alert('Peringatan: jangan tinggalkan halaman! ('+activity+')');
     }
+  },
 
-    const state = loadState();
+  lockExam(reason){
+    if(this._timer) clearInterval(this._timer);
+    document.getElementById('blocked-title').innerText = 'PELANGGARAN TERDETEKSI';
+    document.getElementById('blocked-msg').innerText = reason;
+    this.show('blocked-view');
+  }
+};
 
-    // --- APP ---
-    const app = {
-        init(){
-            this.bindEvents();
-            this.preventCheatingInputs();
-            this.syncUIFromState();
-            // ensure live indicator initial
-            liveIndicator();
-        },
+window.addEventListener('DOMContentLoaded', ()=> app.init());
+</script>
 
-        bindEvents(){
-            const sf = document.getElementById('student-form');
-            if(sf) sf.addEventListener('submit', e => { e.preventDefault(); this.handleStudentLogin(); });
-
-            const af = document.getElementById('admin-form');
-            if(af) af.addEventListener('submit', e => { e.preventDefault(); this.handleAdminLogin(); });
-
-            window.addEventListener('storage', (e) => {
-                if(e.key === STORAGE_KEY || e.key === 'cbt_last_update'){
-                    const newState = loadState();
-                    Object.assign(state, newState);
-                    this.syncUIFromState();
-                    liveIndicator();
-                }
-            });
-        },
-
-        syncUIFromState(){
-            const portalStatus = document.getElementById('portal-status');
-            if(portalStatus){
-                portalStatus.innerHTML = (state.isPortalOpen ? '<span class="live-dot"></span>' : '') + (state.isPortalOpen ? 'Status: PORTAL TERBUKA (Siap Ujian)' : 'Status: PORTAL DITUTUP');
-                portalStatus.style.color = state.isPortalOpen ? 'var(--primary-color)' : 'var(--danger)';
-            }
-
-            function setIf(id, val){ const el = document.getElementById(id); if(el) el.value = val || ''; }
-            setIf('link-x', state.examLinks['X']);
-            setIf('link-xi', state.examLinks['XI']);
-            setIf('link-xii-iis', state.examLinks['XII IIS']);
-            setIf('link-xii-ibb', state.examLinks['XII IBB']);
-            const dur = document.getElementById('exam-duration'); if(dur) dur.value = state.durationMinutes;
-
-            const loginMsg = document.getElementById('login-msg');
-            if(loginMsg) loginMsg.innerText = state.isPortalOpen ? '' : 'Portal ujian belum dibuka oleh panitia.';
-
-            this.renderMonitorList();
-        },
-
-        renderMonitorList(){
-            const ul = document.getElementById('student-monitor-list');
-            if(!ul) return;
-            ul.innerHTML = '';
-            if(!state.monitor || state.monitor.length === 0){
-                ul.innerHTML = '<li style="padding:6px;border-bottom:1px solid #eee;color:#999">Belum ada siswa aktif.</li>';
-                return;
-            }
-            state.monitor.slice().reverse().forEach(entry => {
-                const li = document.createElement('li');
-                li.style.padding = '6px';
-                li.style.borderBottom = '1px solid #eee';
-                li.innerText = `${entry.name} — ${entry.kelas} (${entry.time})`;
-                ul.appendChild(li);
-            });
-        },
-
-        showView(viewId){
-            document.querySelectorAll('body > div').forEach(div => div.classList.add('hidden'));
-            const el = document.getElementById(viewId);
-            if(el) el.classList.remove('hidden');
-        },
-
-        showAdminLogin(){ this.showView('admin-login-view'); },
-        showStudentLogin(){ this.showView('student-login-view'); },
-
-        handleAdminLogin(){
-            const u = document.getElementById('admin-user').value;
-            const p = document.getElementById('admin-pass').value;
-            if(u === 'admin' && p === 'smadalawang20517826'){
-                this.showView('admin-dashboard-view');
-                this.syncUIFromState();
-            } else alert('Username atau Password Salah!');
-        },
-
-        adminLogout(){ this.showStudentLogin(); },
-
-        extractFileId(link){
-            if(!link) return null;
-            let m = link.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-            if(m) return m[1];
-            m = link.match(/id=([a-zA-Z0-9_-]{10,})/);
-            if(m) return m[1];
-            m = link.match(/uc\?id=([a-zA-Z0-9_-]{10,})/);
-            if(m) return m[1];
-            return null;
-        },
-
-        toPreview(link){
-            const id = this.extractFileId(link);
-            if(!id) return null;
-            return `https://drive.google.com/file/d/${id}/preview`;
-        },
-
-        startExamMode(){
-            const linkX = document.getElementById('link-x').value;
-            const linkXI = document.getElementById('link-xi').value;
-            const linkXII_IIS = document.getElementById('link-xii-iis').value;
-            const linkXII_IBB = document.getElementById('link-xii-ibb').value;
-            const durationInput = document.getElementById('exam-duration');
-
-            state.examLinks = {
-                'X': this.toPreview(linkX),
-                'XI': this.toPreview(linkXI),
-                'XII IIS': this.toPreview(linkXII_IIS),
-                'XII IBB': this.toPreview(linkXII_IBB)
-            };
-            state.durationMinutes = parseInt(durationInput.value) || 90;
-            state.isPortalOpen = true;
-            saveState(state);
-            localStorage.setItem('cbt_last_update', Date.now());
-            this.syncUIFromState();
-            liveIndicator();
-            alert('Portal Ujian Dibuka. Link soal telah disimpan untuk masing-masing kelas.');
-            this.showStudentLogin();
-        },
-
-        closePortal(){
-            state.isPortalOpen = false;
-            saveState(state);
-            localStorage.setItem('cbt_last_update', Date.now());
-            this.syncUIFromState();
-            liveIndicator();
-            alert('Portal ditutup. Siswa tidak bisa login.');
-            this.showStudentLogin();
-        },
-
-        handleStudentLogin(){
-            // ensure we have latest state (important for mobile tabs)
-            Object.assign(state, loadState());
-
-            if(!state.isPortalOpen){
-                document.getElementById('login-msg').innerText = 'Portal ujian belum dibuka oleh panitia.';
-                return;
-            }
-
-            const name = document.getElementById('student-name').value.trim();
-            const kelas = document.getElementById('student-class').value;
-
-            if(!name || !kelas){
-                alert('Nama dan kelas harus diisi.');
-                return;
-            }
-
-            state.currentStudent = { name, kelas };
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-
-            state.monitor = state.monitor || [];
-            state.monitor.push({ name, kelas, time: timeStr });
-            if(state.monitor.length > 200) state.monitor.shift();
-            saveState(state);
-            localStorage.setItem('cbt_last_update', Date.now());
-            this.syncUIFromState();
-
-            const confirmExam = confirm(`Halo ${name} (${kelas}).
-Ujian akan segera dimulai.
-
-PERATURAN:
-1. Dilarang membuka tab lain.
-2. Dilarang keluar dari layar penuh.
-3. Sistem akan mengunci jika melanggar.
-
-Siap?`);
-
-            if(confirmExam) this.startExamSession();
-        },
-
-        startExamSession(){
-            const elem = document.documentElement;
-            if(elem.requestFullscreen) elem.requestFullscreen().catch(()=>{});
-
-            document.getElementById('header-student-name').innerText = state.currentStudent.name;
-            document.getElementById('header-student-class').innerText = state.currentStudent.kelas;
-            document.getElementById('watermark-name').innerText = state.currentStudent.name + ' - ' + state.currentStudent.kelas;
-
-            const iframe = document.getElementById('pdf-frame');
-            const examUrl = state.examLinks[state.currentStudent.kelas];
-            if(examUrl){
-                iframe.src = examUrl;
-                document.getElementById('no-pdf-msg').classList.add('hidden');
-            } else {
-                iframe.src = '';
-                document.getElementById('no-pdf-msg').classList.remove('hidden');
-            }
-
-            this.startTimer(state.durationMinutes * 60);
-            this.activateAntiCheat();
-            this.showView('exam-view');
-        },
-
-        startTimer(durationSeconds){
-            let timer = durationSeconds;
-            const display = document.getElementById('timer-display');
-            if(state.timerInterval) clearInterval(state.timerInterval);
-
-            state.timerInterval = setInterval(() => {
-                const hours = Math.floor(timer / 3600);
-                const minutes = Math.floor((timer % 3600) / 60);
-                const seconds = timer % 60;
-                display.textContent = String(hours).padStart(2,'0') + ':' + String(minutes).padStart(2,'0') + ':' + String(seconds).padStart(2,'0');
-                if(--timer < 0) this.finishExam(true);
-            }, 1000);
-        },
-
-        finishExam(force=false){
-            if(!force && !confirm('Apakah Anda yakin ingin mengakhiri ujian? Anda tidak bisa kembali.')) return;
-            if(state.timerInterval) clearInterval(state.timerInterval);
-            document.getElementById('blocked-title').innerText = 'UJIAN SELESAI';
-            document.getElementById('blocked-msg').innerText = 'Terima kasih telah mengerjakan ujian. Silakan lapor ke pengawas dan kumpulkan Lembar Jawaban (LJK).';
-            document.querySelector('#blocked-view .block-icon').innerText = '✅';
-            this.showView('blocked-view');
-            if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-        },
-
-        lockExam(reason){
-            if(state.timerInterval) clearInterval(state.timerInterval);
-            this.showView('blocked-view');
-            document.getElementById('blocked-title').innerText = 'PELANGGARAN TERDETEKSI';
-            document.getElementById('blocked-msg').innerText = reason || 'Aktivitas mencurigakan terdeteksi.';
-        },
-
-        activateAntiCheat(){
-            document.addEventListener('visibilitychange', () => {
-                if(document.hidden) this.handleStrike('Membuka tab lain atau meminimize browser.');
-            });
-        },
-
-        handleStrike(activity){
-            const blockedView = document.getElementById('blocked-view');
-            if(!blockedView.classList.contains('hidden')) return;
-            state.cheatingStrikes = (state.cheatingStrikes || 0) + 1;
-            if(state.cheatingStrikes > state.maxStrikes) this.lockExam(`Akses ditutup otomatis karena Anda meninggalkan halaman ujian sebanyak 3 kali.\n(${activity})`);
-            else alert(`PERINGATAN ${state.cheatingStrikes}/3\n\nJangan tinggalkan halaman ujian! Sistem mendeteksi: ${activity}\nJika terjadi lagi, ujian akan dikunci.`);
-        },
-
-        preventCheatingInputs(){
-            document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('copy', e => e.preventDefault());
-            document.addEventListener('selectstart', e => e.preventDefault());
-            document.onkeydown = function(e){
-                if(e.keyCode === 123) return false;
-                if(e.ctrlKey && e.shiftKey && e.keyCode === 'I'.charCodeAt(0)) return false;
-                if(e.ctrlKey && e.shiftKey && e.keyCode === 'C'.charCodeAt(0)) return false;
-                if(e.ctrlKey && e.shiftKey && e.keyCode === 'J'.charCodeAt(0)) return false;
-                if(e.ctrlKey && e.keyCode === 'U'.charCodeAt(0)) return false;
-            };
-        }
-    };
-
-    // --- AUTO-RELOAD / LIVE INDICATOR ---
-    function liveIndicator(){
-        const el = document.getElementById('portal-status');
-        if(!el) return;
-        el.innerHTML = (state.isPortalOpen ? '<span class="live-dot"></span>' : '') + (state.isPortalOpen ? 'Status: PORTAL TERBUKA (LIVE)' : 'Status: PORTAL DITUTUP');
-        el.style.color = state.isPortalOpen ? 'var(--primary-color)' : 'var(--danger)';
-    }
-
-    // Poll storage for changes (helps mobile browser tabs)
-    setInterval(() => {
-        const latest = loadState();
-        if(latest.isPortalOpen !== state.isPortalOpen || JSON.stringify(latest.examLinks) !== JSON.stringify(state.examLinks)){
-            Object.assign(state, latest);
-            app.syncUIFromState();
-            liveIndicator();
-        }
-    }, 1500);
-
-    // Start
-    window.addEventListener('DOMContentLoaded', () => { app.init(); });
-
-    </script>
 </body>
 </html>
-
