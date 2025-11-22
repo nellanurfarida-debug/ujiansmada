@@ -1,679 +1,205 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT SMAS Plus Darussalam</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CBT Lokal SMAS Plus Darussalam</title>
 
-    <style>
-        /* Custom Styles */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
-        /* View transitions */
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        /* Iframe Container */
-        .pdf-container {
-            height: calc(100vh - 80px); /* Header height */
-            width: 100%;
-            background: #525659; /* Grey background typical of PDF viewers */
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        /* Anti-cheat blocker overlay */
-        #view-cheated {
-            background-color: #fee2e2;
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fca5a5' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
-        }
-    </style>
+  <style>
+    body { background: #f3f4f6; }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-800 select-none">
 
-    <!-- HEADER UMUM -->
-    <header class="bg-green-700 text-white p-4 shadow-md relative z-50">
-        <div class="container mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <!-- Logo Dihapus, diganti ikon akademis -->
-                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-green-700 font-bold text-xl shadow-inner overflow-hidden">
-                    <i class="fas fa-school"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight">SMAS Plus Darussalam</h1>
-                    <p class="text-xs text-green-100">Asesmen Sumatif Akhir Semester Ganjil</p>
-                </div>
-            </div>
-            <div id="btn-panitia" class="text-green-200 hover:text-white cursor-pointer text-xs">
-                <i class="fas fa-lock"></i> Panitia
-            </div>
-        </div>
-    </header>
+<body class="bg-gray-100">
 
-    <div id="app" class="container mx-auto min-h-screen p-4 relative">
+<!-- HEADER -->
+<header class="bg-green-700 text-white p-4 flex justify-between items-center">
+  <h1 class="font-bold text-lg">CBT SMAS Plus Darussalam</h1>
 
-        <!-- 1. VIEW LOGIN SISWA -->
-        <div id="view-login" class="max-w-md mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg fade-in">
-            <h2 class="text-2xl font-bold text-center text-green-700 mb-6">Login Peserta Ujian</h2>
-            <form onsubmit="handleStudentLogin(event)">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap</label>
-                    <input type="text" id="input-nama" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Sesuai Absen">
-                </div>
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
-                    <select id="input-kelas" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white">
-                        <option value="" disabled selected>Pilih Kelas...</option>
-                        <option value="X">Kelas X</option>
-                        <option value="XI">Kelas XI</option>
-                        <option value="XII IBB">Kelas XII IBB</option>
-                        <option value="XII IIS">Kelas XII IIS</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-300 shadow-md">
-                    Masuk Ruang Ujian <i class="fas fa-arrow-right ml-2"></i>
-                </button>
-            </form>
-            <div class="mt-4 text-center text-xs text-gray-400">
-                Pastikan koneksi internet stabil.
-            </div>
-        </div>
+  <!-- TOMBOL PANITIA -->
+  <div id="btn-panitia" class="cursor-pointer text-sm hover:text-yellow-300">
+    <i class="fas fa-lock"></i> Panitia
+  </div>
+</header>
 
-        <!-- 2. VIEW WAITING ROOM -->
-        <div id="view-waiting" class="hidden max-w-2xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-lg text-center fade-in">
-            <div class="mb-6">
-                <i class="fas fa-user-graduate text-6xl text-green-200"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-gray-800">Halo, <span id="student-name-display" class="text-green-600">Siswa</span>!</h2>
-            <p class="text-gray-500 mb-1">Kelas: <span id="student-class-display" class="font-semibold">X</span></p>
-            
-            <div class="my-8 p-6 bg-green-50 rounded-lg border border-green-100">
-                <p id="waiting-status" class="text-lg mb-4 text-gray-600">Menunggu panitia memulai ujian...</p>
-                
-                <button id="btn-start-exam" onclick="startExam()" disabled class="px-8 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg opacity-50 cursor-not-allowed transition-all">
-                    MULAI SEKARANG
-                </button>
-            </div>
+<!-- LOGIN SISWA -->
+<div id="view-login" class="p-6 max-w-md mx-auto mt-10 bg-white rounded shadow">
+  <h2 class="text-xl font-bold mb-4 text-center">Login Siswa</h2>
 
-            <div class="text-left text-sm text-gray-500 bg-gray-50 p-4 rounded">
-                <strong>Aturan Ujian:</strong>
-                <ul class="list-disc ml-5 mt-1 space-y-1">
-                    <li>Jangan refresh halaman.</li>
-                    <li>Dilarang membuka tab lain / aplikasi lain (Terdeteksi Sistem).</li>
-                    <li>Menjawab di Lembar Jawab Komputer (LJK).</li>
-                    <li>Jika melanggar 2x, akun akan terkunci otomatis.</li>
-                </ul>
-            </div>
-        </div>
+  <input id="nama" placeholder="Nama" class="w-full border p-2 rounded mb-3">
 
-        <!-- 3. VIEW EXAM (FULLSCREEN) -->
-        <div id="view-exam" class="hidden fixed inset-0 bg-white z-[100] flex flex-col">
-            <!-- Exam Header -->
-            <div class="bg-gray-800 text-white p-3 flex justify-between items-center shadow-md">
-                <div class="text-sm">
-                    <span class="block font-bold text-green-400" id="exam-student-name">Nama Siswa</span>
-                    <span class="text-gray-400 text-xs" id="exam-student-class">Kelas</span>
-                </div>
-                <div class="text-center">
-                    <div class="text-xs text-gray-400 uppercase tracking-wider">Sisa Waktu</div>
-                    <div id="timer-display" class="text-2xl font-mono font-bold text-white">00:00</div>
-                </div>
-                <button onclick="finishExam()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-4 py-2 rounded">
-                    Selesai
-                </button>
-            </div>
-            
-            <!-- PDF Viewer -->
-            <div class="pdf-container flex-1 relative">
-                <iframe id="pdf-frame" src="" title="Soal Ujian"></iframe>
-                <!-- Overlay to prevent right click on iframe content (partial protection) -->
-                <div class="absolute inset-0 pointer-events-none"></div>
-            </div>
-        </div>
+  <select id="kelas" class="w-full border p-2 rounded mb-3">
+    <option value="">Pilih Kelas...</option>
+    <option>X</option>
+    <option>XI</option>
+    <option>XII IBB</option>
+    <option>XII IIS</option>
+  </select>
 
-        <!-- 4. VIEW CHEATED / LOCKED -->
-        <div id="view-cheated" class="hidden fixed inset-0 z-[200] flex items-center justify-center flex-col text-center p-8">
-            <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-lg border-l-8 border-red-600">
-                <i class="fas fa-ban text-6xl text-red-600 mb-4"></i>
-                <h1 class="text-3xl font-bold text-red-700 mb-2">UJIAN DIBATALKAN</h1>
-                <p class="text-gray-800 font-semibold mb-4">Anda terdeteksi melakukan pelanggaran keamanan (pindah tab/aplikasi) lebih dari batas toleransi.</p>
-                <p class="text-gray-500 text-sm">Silakan lapor ke panitia/pengawas ujian untuk membuka blokir ini.</p>
-                <button onclick="location.reload()" class="mt-6 px-6 py-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-50 text-sm">
-                    Kembali ke Halaman Utama
-                </button>
-            </div>
-        </div>
+  <button onclick="masukUjian()" class="w-full bg-green-600 text-white py-2 rounded">
+    Masuk
+  </button>
+</div>
 
-        <!-- 5. VIEW FINISHED -->
-        <div id="view-finished" class="hidden fixed inset-0 z-[200] bg-green-50 flex items-center justify-center flex-col text-center p-8">
-             <div class="bg-white p-10 rounded-2xl shadow-xl max-w-lg">
-                <i class="fas fa-check-circle text-6xl text-green-600 mb-4"></i>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Ujian Selesai</h1>
-                <p class="text-gray-600 mb-6">Terima kasih telah mengikuti ujian. Pastikan LJK sudah dikumpulkan ke pengawas.</p>
-                <button onclick="location.reload()" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                    Tutup Aplikasi
-                </button>
-             </div>
-        </div>
+<!-- VIEW MENUNGGU -->
+<div id="view-wait" class="hidden p-6 max-w-md mx-auto mt-10 bg-white rounded shadow text-center">
+  <h2 class="text-xl font-bold mb-2">Menunggu Ujian Dimulai</h2>
+  <p class="text-gray-600 mb-6">Tunggu panitia memulai ujian.</p>
+</div>
 
-        <!-- 6. VIEW ADMIN LOGIN -->
-        <div id="view-admin-login" class="hidden max-w-sm mx-auto mt-20 bg-white p-8 rounded-xl shadow-xl border border-gray-200 fade-in">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i class="fas fa-user-shield"></i> Login Panitia
-            </h3>
-            <form onsubmit="handleAdminLogin(event)">
-                <div class="mb-3">
-                    <input type="text" id="admin-user" class="w-full border p-2 rounded" placeholder="Username">
-                </div>
-                <div class="mb-4">
-                    <input type="password" id="admin-pass" class="w-full border p-2 rounded" placeholder="Password">
-                </div>
-                <div class="flex justify-between">
-                    <button type="button" onclick="showView('login')" class="text-gray-500 text-sm hover:underline">Batal</button>
-                    <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900">Masuk</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- 7. VIEW ADMIN PANEL -->
-        <div id="view-admin-panel" class="hidden container mx-auto fade-in">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <!-- Controls -->
-                <div class="md:col-span-1 space-y-6">
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="font-bold text-lg mb-4 border-b pb-2">Kontrol Utama</h3>
-                        
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status Ujian</label>
-                            <div class="flex items-center p-2 bg-gray-100 rounded">
-                                <div id="admin-status-indicator" class="text-yellow-600 font-bold">MENUNGGU</div>
-                            </div>
-                        </div>
-
-                        <div class="mb-6">
-                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Durasi (Menit)</label>
-                             <input type="number" id="admin-duration" value="90" class="w-full border p-2 rounded">
-                        </div>
-
-                        <button id="btn-admin-toggle" onclick="toggleExamStatus()" class="w-full bg-green-600 text-white py-3 rounded font-bold shadow-lg hover:bg-green-700 transition-colors">
-                            Mulai Ujian Serentak
-                        </button>
-                        
-                         <button onclick="location.reload()" class="w-full mt-2 border border-red-300 text-red-500 py-2 rounded text-sm hover:bg-red-50">
-                            Log Out
-                        </button>
-                    </div>
-
-                    <!-- Bagian Upload/Input Soal -->
-                    <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="font-bold text-lg">Upload / Input Soal</h3>
-                            <a href="https://drive.google.com" target="_blank" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">
-                                <i class="fab fa-google-drive"></i> Buka Drive
-                            </a>
-                        </div>
-                        <p class="text-xs text-gray-500 mb-4 italic">Upload file PDF ke Google Drive, lalu paste link "Share -> Copy Link" di bawah. Pastikan akses link adalah "Anyone with the link".</p>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Soal Kelas X</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="link-x" class="w-full border text-sm p-2 rounded bg-gray-50" placeholder="Paste Link Drive Kelas X disini...">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Soal Kelas XI</label>
-                                <input type="text" id="link-xi" class="w-full border text-sm p-2 rounded bg-gray-50" placeholder="Paste Link Drive Kelas XI disini...">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Soal Kelas XII IBB</label>
-                                <input type="text" id="link-xii-ibb" class="w-full border text-sm p-2 rounded bg-gray-50" placeholder="Paste Link Drive Kelas XII IBB disini...">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Soal Kelas XII IIS</label>
-                                <input type="text" id="link-xii-iis" class="w-full border text-sm p-2 rounded bg-gray-50" placeholder="Paste Link Drive Kelas XII IIS disini...">
-                            </div>
-                            
-                            <button onclick="saveConfig()" class="w-full bg-blue-600 text-white py-2 rounded text-sm hover:bg-blue-700 mt-2 shadow">
-                                <i class="fas fa-save mr-1"></i> Simpan Soal & Durasi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monitoring -->
-                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-md h-screen overflow-y-auto">
-                    <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 class="font-bold text-lg">Monitoring Siswa</h3>
-                        <span class="text-xs bg-gray-200 px-2 py-1 rounded">Live Realtime</span>
-                    </div>
-                    
-                    <div id="student-list" class="space-y-2">
-                        <div class="text-center text-gray-400 py-10">
-                            Belum ada siswa yang login.
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
+<!-- EXAM VIEW -->
+<div id="view-exam" class="hidden fixed inset-0 bg-white flex flex-col">
+  <div class="bg-gray-800 text-white p-3 flex justify-between items-center">
+    <div>
+      <div id="exam-nama" class="font-bold"></div>
+      <div id="exam-kelas" class="text-xs text-gray-300"></div>
     </div>
 
-    <!-- SCRIPT (dipindah ke akhir body supaya DOM sudah tersedia) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <button onclick="selesai()" class="bg-red-600 px-4 py-1 rounded text-sm">
+      Selesai
+    </button>
+  </div>
 
-        // --- KONFIGURASI & LOGIKA APLIKASI ---
-        // Global variables
-        const apiKey = ""; // API Key disediakan oleh environment
-        const firebaseConfig = JSON.parse(localStorage.getItem('firebaseConfig') || '{}'); 
-        const appConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-exam-app';
+  <iframe id="pdf" class="flex-1 w-full"></iframe>
+</div>
 
-        const app = initializeApp(appConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+<!-- LOGIN PANITIA -->
+<div id="view-admin-login" class="hidden p-6 max-w-sm mx-auto mt-20 bg-white rounded shadow">
+  <h2 class="text-lg font-bold mb-4">Login Panitia</h2>
 
-        let currentUser = null;
-        let studentDocRef = null;
-        let examConfigUnsubscribe = null;
-        let warningCount = 0;
-        let examInterval = null;
+  <input id="admin-user" placeholder="Username" class="w-full border p-2 rounded mb-3">
+  <input id="admin-pass" placeholder="Password" type="password" class="w-full border p-2 rounded mb-3">
 
-        // --- DOM ELEMENTS ---
-        const views = {
-            login: document.getElementById('view-login'),
-            waiting: document.getElementById('view-waiting'),
-            exam: document.getElementById('view-exam'),
-            cheated: document.getElementById('view-cheated'),
-            adminLogin: document.getElementById('view-admin-login'),
-            adminPanel: document.getElementById('view-admin-panel'),
-            finished: document.getElementById('view-finished')
-        };
+  <button onclick="adminMasuk()" class="w-full bg-gray-800 text-white py-2 rounded">
+    Masuk
+  </button>
+</div>
+<!-- PANEL ADMIN -->
+<div id="view-admin" class="hidden p-6 max-w-3xl mx-auto mt-10 bg-white rounded shadow">
 
-        // --- NAVIGASI VIEW ---
-        function showView(viewName) {
-            // safety guard jika elemen belum ada
-            if (!views[viewName]) return;
-            Object.values(views).forEach(el => { if(el) el.classList.add('hidden'); });
-            views[viewName].classList.remove('hidden');
-        }
+  <h2 class="text-xl font-bold mb-4">Panel Panitia</h2>
 
-        // --- AUTHENTICATION ---
-        async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // Custom token logic if needed
-            } else {
-                await signInAnonymously(auth);
-            }
-        }
+  <!-- INPUT LINK SOAL PER KELAS -->
+  <label class="block mb-1 font-semibold">Link Soal Kelas X</label>
+  <input id="link-x" class="w-full border p-2 rounded mb-3">
 
-        initAuth();
+  <label class="block mb-1 font-semibold">Link Soal Kelas XI</label>
+  <input id="link-xi" class="w-full border p-2 rounded mb-3">
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                console.log("User logged in:", user.uid);
-                // Check if session exists in sessionStorage
-                const savedState = sessionStorage.getItem('examState');
-                if (savedState === 'waiting') {
-                    setupStudentListener();
-                    showView('waiting');
-                } else if (savedState === 'exam') {
-                    resumeExam();
-                } else if (savedState === 'admin') {
-                    setupAdminListener();
-                    showView('adminPanel');
-                }
-            }
-        });
+  <label class="block mb-1 font-semibold">Link Soal XII IBB</label>
+  <input id="link-xii-ibb" class="w-full border p-2 rounded mb-3">
 
-        // --- LOGIKA SISWA ---
-        // 1. Login Siswa
-        window.handleStudentLogin = async (e) => {
-            e.preventDefault();
-            const nama = document.getElementById('input-nama').value;
-            const kelas = document.getElementById('input-kelas').value;
+  <label class="block mb-1 font-semibold">Link Soal XII IIS</label>
+  <input id="link-xii-iis" class="w-full border p-2 rounded mb-3">
 
-            if (!currentUser) return alert("Koneksi server belum siap. Coba refresh.");
+  <button onclick="mulaiSemua()" class="w-full bg-green-600 text-white py-2 rounded mb-3">
+    Mulai Ujian
+  </button>
 
-            studentDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'exam_data', 'profile');
+  <button onclick="location.reload()" class="w-full border border-red-400 text-red-600 py-2 rounded">
+    Keluar
+  </button>
 
-            await setDoc(studentDocRef, {
-                nama: nama,
-                kelas: kelas,
-                status: 'online', // online, working, cheated, finished
-                warnings: 0,
-                joinedAt: new Date().toISOString()
-            });
+</div>
 
-            const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-            await setDoc(publicPresenceRef, {
-                nama: nama,
-                kelas: kelas,
-                status: 'online',
-                warnings: 0,
-                lastActive: new Date().toISOString()
-            });
+<!-- ========================= -->
+<!-- ==== JAVASCRIPT CORE ==== -->
+<!-- ========================= -->
 
-            sessionStorage.setItem('studentName', nama);
-            sessionStorage.setItem('studentClass', kelas);
-            sessionStorage.setItem('examState', 'waiting');
+<script>
 
-            document.getElementById('student-name-display').innerText = nama;
-            document.getElementById('student-class-display').innerText = kelas;
-            
-            setupStudentListener();
-            showView('waiting');
-        }
+let siswa = {};
+let soal = {};
 
-        // 2. Listener Waiting Room
-        function setupStudentListener() {
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
+// Fungsi ganti tampilan
+function show(id){
+  document.querySelectorAll('[id^=view]').forEach(v => v.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
 
-            examConfigUnsubscribe = onSnapshot(configRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const btnStart = document.getElementById('btn-start-exam');
-                    const statusText = document.getElementById('waiting-status');
+// TOMBOL PANITIA DI HEADER
+document.getElementById("btn-panitia").onclick = () => show("view-admin-login");
 
-                    const myClass = sessionStorage.getItem('studentClass');
-                    const pdfLink = data.links ? data.links[myClass] : null;
+// LOGIN PANITIA
+function adminMasuk(){
+  const u = document.getElementById("admin-user").value;
+  const p = document.getElementById("admin-pass").value;
 
-                    sessionStorage.setItem('examDuration', data.duration || 90);
-                    if(pdfLink) sessionStorage.setItem('examPdf', pdfLink);
+  if(u === "admin ujian" && p === "smadalawang20517826"){
+    show("view-admin");
+  } else {
+    alert("Username atau password salah!");
+  }
+}
 
-                    if (data.status === 'started') {
-                        statusText.innerText = "Panitia telah memulai ujian!";
-                        statusText.classList.add('text-green-600', 'font-bold');
-                        btnStart.disabled = false;
-                        btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
-                        btnStart.classList.add('animate-bounce');
-                    } else {
-                        statusText.innerText = "Menunggu panitia memulai ujian...";
-                        statusText.classList.remove('text-green-600', 'font-bold');
-                        btnStart.disabled = true;
-                        btnStart.classList.add('opacity-50', 'cursor-not-allowed');
-                        btnStart.classList.remove('animate-bounce');
-                    }
-                }
-            }, (error) => {
-                console.error("Error listening to config:", error);
-            });
-        }
+// LOGIN SISWA
+function masukUjian(){
+  let nama = document.getElementById("nama").value;
+  let kelas = document.getElementById("kelas").value;
 
-        // 3. Mulai Ujian
-        window.startExam = async () => {
-            const pdfLink = sessionStorage.getItem('examPdf');
-            if (!pdfLink) return alert("Soal untuk kelas Anda belum disetting panitia.");
+  if(!nama || !kelas){
+    return alert("Isi semua field!");
+  }
 
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'working' });
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'working' });
-            }
+  siswa = { nama, kelas };
+  show("view-wait");
+}
 
-            document.getElementById('pdf-frame').src = pdfLink;
-            
-            document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
-            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
+// PANITIA MENEKAN MULAI UJIAN
+function mulaiSemua(){
+  soal = {
+    "X": document.getElementById("link-x").value,
+    "XI": document.getElementById("link-xi").value,
+    "XII IBB": document.getElementById("link-xii-ibb").value,
+    "XII IIS": document.getElementById("link-xii-iis").value
+  };
 
-            try {
-                await document.documentElement.requestFullscreen();
-            } catch (err) {
-                console.log("Fullscreen blocked/cancelled");
-            }
+  mulaiUjian();
+}
 
-            sessionStorage.setItem('examState', 'exam');
-            showView('exam');
-            startTimer(parseInt(sessionStorage.getItem('examDuration')));
-            activateAntiCheat();
-        }
+// MASUK KE TAMPILAN UJIAN
+function mulaiUjian(){
+  const link = soal[siswa.kelas];
+  if(!link){
+    return alert("Panitia belum mengatur link soal untuk kelas ini!");
+  }
 
-        function resumeExam() {
-            const pdfLink = sessionStorage.getItem('examPdf');
-            if(pdfLink) document.getElementById('pdf-frame').src = pdfLink;
-             document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
-            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
-            showView('exam');
-            activateAntiCheat();
-             startTimer(parseInt(sessionStorage.getItem('examDuration')));
-        }
+  document.getElementById("pdf").src = link;
+  document.getElementById("exam-nama").innerText = siswa.nama;
+  document.getElementById("exam-kelas").innerText = siswa.kelas;
 
-        // 4. Timer
-        function startTimer(minutes) {
-            let time = minutes * 60;
-            const timerDisplay = document.getElementById('timer-display');
-            
-            if(examInterval) clearInterval(examInterval);
+  show("view-exam");
+}
 
-            examInterval = setInterval(() => {
-                const m = Math.floor(time / 60);
-                const s = time % 60;
-                timerDisplay.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-                
-                if (time < 300) timerDisplay.classList.add('text-red-600', 'animate-pulse');
+// SELESAI UJIAN
+function selesai(){
+  alert("Jawaban terkirim. Anda telah menyelesaikan ujian.");
+  location.reload();
+}
+/* =======================================================
+   ANTI CHEAT SEDERHANA (OPSIONAL — SUDAH AKTIF)
+   ======================================================= */
+// Jika siswa keluar tab lebih dari 3 kali → otomatis reset ujian
+let cheatCount = 0;
 
-                if (time <= 0) {
-                    clearInterval(examInterval);
-                    finishExam(true);
-                }
-                time--;
-            }, 1000);
-        }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && document.getElementById("view-exam") &&
+      !document.getElementById("view-exam").classList.contains("hidden")) {
 
-        // 5. Anti-Cheating
-        function activateAntiCheat() {
-            document.addEventListener('contextmenu', event => event.preventDefault());
-            
-            document.addEventListener('keydown', (e) => {
-                if(e.ctrlKey && (e.key === 'u' || e.key === 'c' || e.key === 'v')) e.preventDefault();
-                if(e.key === 'F12') e.preventDefault();
-            });
+    cheatCount++;
 
-            document.addEventListener('visibilitychange', handleViolation);
-            window.addEventListener('blur', handleViolation);
-        }
+    if (cheatCount >= 3) {
+      alert("Anda keluar dari tab terlalu sering. Ujian dibatalkan.");
+      location.reload();
+    } else {
+      alert("Peringatan! Jangan keluar dari tab ujian! (" + cheatCount + "/3)");
+    }
+  }
+});
+</script>
 
-        function handleViolation() {
-            const state = sessionStorage.getItem('examState');
-            if (state !== 'exam') return;
-
-            if (document.hidden || !document.hasFocus()) {
-                warningCount++;
-                
-                if(studentDocRef) updateDoc(studentDocRef, { warnings: warningCount });
-                if(currentUser) {
-                    const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                    updateDoc(publicPresenceRef, { warnings: warningCount });
-                }
-
-                if (warningCount >= 2) {
-                   lockExam();
-                } else {
-                   alert(`PERINGATAN ${warningCount}/2: Dilarang membuka tab lain atau aplikasi lain! Ujian akan terkunci jika Anda melakukan ini lagi.`);
-                   document.documentElement.requestFullscreen().catch(()=>{});
-                }
-            }
-        }
-
-        async function lockExam() {
-            if(examInterval) clearInterval(examInterval);
-            
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'cheated' });
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'cheated' });
-            }
-
-            sessionStorage.setItem('examState', 'cheated');
-            showView('cheated');
-            if (document.fullscreenElement) document.exitFullscreen();
-        }
-
-        window.finishExam = async (auto = false) => {
-            if(examInterval) clearInterval(examInterval);
-            
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'finished' });
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'finished' });
-            }
-
-            sessionStorage.setItem('examState', 'finished');
-            
-            if(auto) alert("Waktu ujian telah habis.");
-            
-            showView('finished');
-             if (document.fullscreenElement) document.exitFullscreen();
-        }
-
-        // --- LOGIKA ADMIN ---
-        // expose toggle function and admin handlers on window
-        window.toggleAdminLogin = () => {
-            showView('adminLogin');
-        }
-
-        window.handleAdminLogin = (e) => {
-            e.preventDefault();
-            const u = document.getElementById('admin-user').value;
-            const p = document.getElementById('admin-pass').value;
-
-            if (u === 'admin ujian' && p === 'smadalawang20517826') {
-                sessionStorage.setItem('examState', 'admin');
-                setupAdminListener();
-                showView('adminPanel');
-            } else {
-                alert("Username atau Password salah!");
-            }
-        }
-
-        async function setupAdminListener() {
-             const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-             
-             try {
-                 const snap = await getDoc(configRef);
-                 if(snap.exists()) {
-                     const d = snap.data();
-                     document.getElementById('admin-duration').value = d.duration || 90;
-                     if(d.links) {
-                         document.getElementById('link-x').value = d.links['X'] || '';
-                         document.getElementById('link-xi').value = d.links['XI'] || '';
-                         document.getElementById('link-xii-ibb').value = d.links['XII IBB'] || '';
-                         document.getElementById('link-xii-iis').value = d.links['XII IIS'] || '';
-                     }
-                     updateAdminStatusUI(d.status);
-                 }
-             } catch (err) {
-                 console.log("Config not found or created yet.");
-             }
-
-             startStudentPresenceListener();
-        }
-        
-        window.saveConfig = async () => {
-            const duration = parseInt(document.getElementById('admin-duration').value);
-            const links = {
-                'X': document.getElementById('link-x').value,
-                'XI': document.getElementById('link-xi').value,
-                'XII IBB': document.getElementById('link-xii-ibb').value,
-                'XII IIS': document.getElementById('link-xii-iis').value
-            };
-            
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-            await setDoc(configRef, {
-                duration: duration,
-                links: links,
-                status: 'waiting' // Reset status to waiting on save
-            }, { merge: true });
-            
-            alert("Konfigurasi disimpan!");
-            updateAdminStatusUI('waiting');
-        }
-
-        window.toggleExamStatus = async () => {
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-            const currentStatus = document.getElementById('admin-status-indicator').innerText;
-            
-            const newStatus = currentStatus.includes('MENUNGGU') ? 'started' : 'waiting';
-            
-            await setDoc(configRef, { status: newStatus }, { merge: true });
-            updateAdminStatusUI(newStatus);
-        }
-
-        function updateAdminStatusUI(status) {
-            const indicator = document.getElementById('admin-status-indicator');
-            const btn = document.getElementById('btn-admin-toggle');
-            
-            if (status === 'started') {
-                indicator.innerText = "SEDANG BERLANGSUNG";
-                indicator.className = "text-green-600 font-bold ml-2";
-                btn.innerText = "Hentikan Ujian";
-                btn.className = "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow";
-            } else {
-                indicator.innerText = "MENUNGGU (Standby)";
-                indicator.className = "text-yellow-600 font-bold ml-2";
-                btn.innerText = "Mulai Ujian Serentak";
-                btn.className = "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow animate-pulse";
-            }
-        }
-
-        function startStudentPresenceListener() {
-            const listContainer = document.getElementById('student-list');
-            const presenceRef = collection(db, 'artifacts', appId, 'public', 'data', 'student_presence');
-            
-            onSnapshot(presenceRef, (snapshot) => {
-                listContainer.innerHTML = '';
-                if (snapshot.empty) {
-                     listContainer.innerHTML = '<div class="text-center text-gray-400 py-10'>Belum ada siswa yang login.</div>';
-                     return;
-                }
-                snapshot.forEach(doc => {
-                    const s = doc.data();
-                    let statusColor = 'text-gray-500';
-                    let statusIcon = 'fa-circle';
-                    
-                    if(s.status === 'working') { statusColor = 'text-blue-500'; statusIcon = 'fa-pen'; }
-                    if(s.status === 'cheated') { statusColor = 'text-red-600'; statusIcon = 'fa-triangle-exclamation'; }
-                    if(s.status === 'finished') { statusColor = 'text-green-600'; statusIcon = 'fa-check'; }
-
-                    const row = `
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded border mb-2">
-                            <div>
-                                <div class="font-bold text-gray-800">${s.nama}</div>
-                                <div class="text-xs text-gray-500">${s.kelas}</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="text-xs text-red-500 font-bold">${s.warnings > 0 ? s.warnings + ' Pelanggaran' : ''}</div>
-                                <div class="${statusColor} flex items-center gap-1">
-                                    <i class="fas ${statusIcon}"></i>
-                                    <span class="text-sm font-medium uppercase">${s.status}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    listContainer.innerHTML += row;
-                });
-            }, (err) => console.log(err));
-        }
-
-        // attach click handler after DOM is ready
-        const panitiaBtn = document.getElementById('btn-panitia');
-        if (panitiaBtn) panitiaBtn.addEventListener('click', () => window.toggleAdminLogin());
-
-    </script>
 </body>
 </html>
