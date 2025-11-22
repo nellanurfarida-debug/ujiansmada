@@ -111,19 +111,30 @@
 
 <script>
 
+// -------------------------------
+// VARIABEL GLOBAL
+// -------------------------------
 let siswa = {};
 let soal = {};
+let timer = null;
+let waktuTersisa = 5400; // 90 menit (5400 detik)
+let cheatCount = 0;
 
-// Fungsi ganti tampilan
+
+// -------------------------------
+// FUNGSI GANTI HALAMAN
+// -------------------------------
 function show(id){
   document.querySelectorAll('[id^=view]').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 
-// TOMBOL PANITIA DI HEADER
+
+// -------------------------------
+// LOGIN PANITIA
+// -------------------------------
 document.getElementById("btn-panitia").onclick = () => show("view-admin-login");
 
-// LOGIN PANITIA
 function adminMasuk(){
   const u = document.getElementById("admin-user").value;
   const p = document.getElementById("admin-pass").value;
@@ -135,7 +146,10 @@ function adminMasuk(){
   }
 }
 
+
+// -------------------------------
 // LOGIN SISWA
+// -------------------------------
 function masukUjian(){
   let nama = document.getElementById("nama").value;
   let kelas = document.getElementById("kelas").value;
@@ -148,7 +162,10 @@ function masukUjian(){
   show("view-wait");
 }
 
-// PANITIA MENEKAN MULAI UJIAN
+
+// -------------------------------
+// PANITIA MENEKAN 'MULAI UJIAN'
+// -------------------------------
 function mulaiSemua(){
   soal = {
     "X": document.getElementById("link-x").value,
@@ -160,7 +177,10 @@ function mulaiSemua(){
   mulaiUjian();
 }
 
-// MASUK KE TAMPILAN UJIAN
+
+// -------------------------------
+// MASUK KE MODE UJIAN + FULLSCREEN
+// -------------------------------
 function mulaiUjian(){
   const link = soal[siswa.kelas];
   if(!link){
@@ -172,34 +192,83 @@ function mulaiUjian(){
   document.getElementById("exam-kelas").innerText = siswa.kelas;
 
   show("view-exam");
+
+  // MASUK FULLSCREEN
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
+  }
+
+  mulaiTimer();
 }
 
-// SELESAI UJIAN
-function selesai(){
-  alert("Jawaban terkirim. Anda telah menyelesaikan ujian.");
-  location.reload();
-}
-/* =======================================================
-   ANTI CHEAT SEDERHANA (OPSIONAL — SUDAH AKTIF)
-   ======================================================= */
-// Jika siswa keluar tab lebih dari 3 kali → otomatis reset ujian
-let cheatCount = 0;
 
+// -------------------------------
+// TIMER 90 MENIT + UPDATE UI
+// -------------------------------
+function mulaiTimer(){
+  waktuTersisa = 5400;  // 90 menit
+
+  timer = setInterval(() => {
+    waktuTersisa--;
+
+    let m = Math.floor(waktuTersisa / 60);
+    let s = waktuTersisa % 60;
+
+    // TAMPILKAN DI JUDUL TAB
+    document.title = `Sisa Waktu: ${m}:${s < 10 ? "0" + s : s}`;
+
+    // TAMPILKAN DI HEADER UI
+    document.getElementById("exam-timer").innerText =
+      m + ":" + (s < 10 ? "0" + s : s);
+
+    // Jika waktu habis → auto submit
+    if(waktuTersisa <= 0){
+      clearInterval(timer);
+      selesai("Waktu habis. Jawaban otomatis dikirim.");
+    }
+
+  }, 1000);
+}
+
+
+// -------------------------------
+// ANTI CHEATING — 3x KELUAR TAB
+// -------------------------------
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && document.getElementById("view-exam") &&
-      !document.getElementById("view-exam").classList.contains("hidden")) {
-
+  if (
+    document.hidden &&
+    document.getElementById("view-exam") &&
+    !document.getElementById("view-exam").classList.contains("hidden")
+  ) {
     cheatCount++;
 
-    if (cheatCount >= 3) {
-      alert("Anda keluar dari tab terlalu sering. Ujian dibatalkan.");
+    if(cheatCount >= 3){
+      alert("Anda keluar tab terlalu sering. Ujian dibatalkan.");
       location.reload();
     } else {
-      alert("Peringatan! Jangan keluar dari tab ujian! (" + cheatCount + "/3)");
+      alert(`Peringatan! Jangan keluar dari tab! (${cheatCount}/3)`);
     }
   }
 });
-</script>
 
+
+// -------------------------------
+// SELESAI UJIAN + AUTO SUBMIT
+// -------------------------------
+function selesai(pesan){
+  clearInterval(timer);
+
+  if(pesan) alert(pesan);
+  else alert("Jawaban terkirim. Anda telah menyelesaikan ujian.");
+
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  }
+
+  location.reload();
+}
+
+</script>
 </body>
 </html>
+
