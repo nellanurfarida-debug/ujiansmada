@@ -111,30 +111,37 @@
 
 <script>
 
-// -------------------------------
-// VARIABEL GLOBAL
-// -------------------------------
 let siswa = {};
 let soal = {};
-let timer = null;
-let waktuTersisa = 5400; // 90 menit (5400 detik)
-let cheatCount = 0;
+let ujianDimulai = false;
 
+/* ==============================
+   HELPER: Konversi link Drive ke preview
+================================ */
+function convertGDriveLink(url){
+  if(url.includes("drive.google.com")){
+    let id = url.split("/d/")[1]?.split("/")[0];
+    return `https://drive.google.com/file/d/${id}/preview`;
+  }
+  return url;
+}
 
-// -------------------------------
-// FUNGSI GANTI HALAMAN
-// -------------------------------
+/* ==============================
+   SHOW/HIDE VIEW
+================================ */
 function show(id){
   document.querySelectorAll('[id^=view]').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
 
-
-// -------------------------------
-// LOGIN PANITIA
-// -------------------------------
+/* ==============================
+   TOMBOL PANITIA
+================================ */
 document.getElementById("btn-panitia").onclick = () => show("view-admin-login");
 
+/* ==============================
+   LOGIN PANITIA
+================================ */
 function adminMasuk(){
   const u = document.getElementById("admin-user").value;
   const p = document.getElementById("admin-pass").value;
@@ -146,10 +153,9 @@ function adminMasuk(){
   }
 }
 
-
-// -------------------------------
-// LOGIN SISWA
-// -------------------------------
+/* ==============================
+   LOGIN SISWA
+================================ */
 function masukUjian(){
   let nama = document.getElementById("nama").value;
   let kelas = document.getElementById("kelas").value;
@@ -160,29 +166,41 @@ function masukUjian(){
 
   siswa = { nama, kelas };
   show("view-wait");
+
+  // tunggu panitia menekan mulai
+  let cek = setInterval(() => {
+    if(ujianDimulai === true){
+      clearInterval(cek);
+      mulaiUjian();
+    }
+  }, 500);
 }
 
-
-// -------------------------------
-// PANITIA MENEKAN 'MULAI UJIAN'
-// -------------------------------
+/* ==============================
+   PANITIA MULAI UJIAN
+================================ */
 function mulaiSemua(){
+
+  // simpan link soal
   soal = {
-    "X": document.getElementById("link-x").value,
-    "XI": document.getElementById("link-xi").value,
-    "XII IBB": document.getElementById("link-xii-ibb").value,
-    "XII IIS": document.getElementById("link-xii-iis").value
+    "X": convertGDriveLink(document.getElementById("link-x").value),
+    "XI": convertGDriveLink(document.getElementById("link-xi").value),
+    "XII IBB": convertGDriveLink(document.getElementById("link-xii-ibb").value),
+    "XII IIS": convertGDriveLink(document.getElementById("link-xii-iis").value),
   };
 
-  mulaiUjian();
+  ujianDimulai = true;
+
+  alert("Ujian dimulai! Semua siswa bisa masuk.");
 }
 
-
-// -------------------------------
-// MASUK KE MODE UJIAN + FULLSCREEN
-// -------------------------------
+/* ==============================
+   MASUK HALAMAN UJIAN
+================================ */
 function mulaiUjian(){
+
   const link = soal[siswa.kelas];
+
   if(!link){
     return alert("Panitia belum mengatur link soal untuk kelas ini!");
   }
@@ -192,83 +210,38 @@ function mulaiUjian(){
   document.getElementById("exam-kelas").innerText = siswa.kelas;
 
   show("view-exam");
-
-  // MASUK FULLSCREEN
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
-  }
-
-  mulaiTimer();
 }
 
-
-// -------------------------------
-// TIMER 90 MENIT + UPDATE UI
-// -------------------------------
-function mulaiTimer(){
-  waktuTersisa = 5400;  // 90 menit
-
-  timer = setInterval(() => {
-    waktuTersisa--;
-
-    let m = Math.floor(waktuTersisa / 60);
-    let s = waktuTersisa % 60;
-
-    // TAMPILKAN DI JUDUL TAB
-    document.title = `Sisa Waktu: ${m}:${s < 10 ? "0" + s : s}`;
-
-    // TAMPILKAN DI HEADER UI
-    document.getElementById("exam-timer").innerText =
-      m + ":" + (s < 10 ? "0" + s : s);
-
-    // Jika waktu habis → auto submit
-    if(waktuTersisa <= 0){
-      clearInterval(timer);
-      selesai("Waktu habis. Jawaban otomatis dikirim.");
-    }
-
-  }, 1000);
+/* ==============================
+   SELESAI UJIAN
+================================ */
+function selesai(){
+  alert("Jawaban terkirim. Anda telah menyelesaikan ujian.");
+  location.reload();
 }
 
+/* ==============================
+   ANTI CHEAT
+================================ */
+let cheatCount = 0;
 
-// -------------------------------
-// ANTI CHEATING — 3x KELUAR TAB
-// -------------------------------
 document.addEventListener("visibilitychange", () => {
-  if (
-    document.hidden &&
-    document.getElementById("view-exam") &&
-    !document.getElementById("view-exam").classList.contains("hidden")
-  ) {
+  if (document.hidden && !document.getElementById("view-exam").classList.contains("hidden")) {
+
     cheatCount++;
 
-    if(cheatCount >= 3){
-      alert("Anda keluar tab terlalu sering. Ujian dibatalkan.");
+    if (cheatCount >= 3) {
+      alert("Anda keluar dari tab terlalu sering. Ujian dibatalkan.");
       location.reload();
     } else {
-      alert(`Peringatan! Jangan keluar dari tab! (${cheatCount}/3)`);
+      alert(`Peringatan! Jangan keluar dari tab ujian! (${cheatCount}/3)`);
     }
   }
 });
 
-
-// -------------------------------
-// SELESAI UJIAN + AUTO SUBMIT
-// -------------------------------
-function selesai(pesan){
-  clearInterval(timer);
-
-  if(pesan) alert(pesan);
-  else alert("Jawaban terkirim. Anda telah menyelesaikan ujian.");
-
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  }
-
-  location.reload();
-}
-
 </script>
+
 </body>
 </html>
+
 
