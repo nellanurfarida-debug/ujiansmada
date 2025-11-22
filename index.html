@@ -9,439 +9,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- KONFIGURASI & LOGIKA APLIKASI ---
-        
-        // Global variables
-        const apiKey = ""; // API Key disediakan oleh environment
-        const firebaseConfig = JSON.parse(localStorage.getItem('firebaseConfig') || '{}'); 
-        
-        // Menggunakan konfigurasi global environment jika ada
-        const appConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-exam-app';
-
-        const app = initializeApp(appConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let currentUser = null;
-        let studentDocRef = null;
-        let examConfigUnsubscribe = null;
-        let warningCount = 0;
-        let examInterval = null;
-
-        // --- DOM ELEMENTS ---
-        const views = {
-            login: document.getElementById('view-login'),
-            waiting: document.getElementById('view-waiting'),
-            exam: document.getElementById('view-exam'),
-            cheated: document.getElementById('view-cheated'),
-            adminLogin: document.getElementById('view-admin-login'),
-            adminPanel: document.getElementById('view-admin-panel'),
-            finished: document.getElementById('view-finished')
-        };
-
-        // --- NAVIGASI VIEW ---
-        function showView(viewName) {
-            Object.values(views).forEach(el => el.classList.add('hidden'));
-            views[viewName].classList.remove('hidden');
-        }
-
-        // --- AUTHENTICATION ---
-        async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // Custom token logic if needed
-            } else {
-                await signInAnonymously(auth);
-            }
-        }
-
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                console.log("User logged in:", user.uid);
-                // Check if session exists in sessionStorage
-                const savedState = sessionStorage.getItem('examState');
-                if (savedState === 'waiting') {
-                    setupStudentListener();
-                    showView('waiting');
-                } else if (savedState === 'exam') {
-                    resumeExam();
-                } else if (savedState === 'admin') {
-                    setupAdminListener();
-                    showView('adminPanel');
-                }
-            }
-        });
-
-        // --- LOGIKA SISWA ---
-
-        // 1. Login Siswa
-        window.handleStudentLogin = async (e) => {
-            e.preventDefault();
-            const nama = document.getElementById('input-nama').value;
-            const kelas = document.getElementById('input-kelas').value;
-
-            if (!currentUser) return alert("Koneksi server belum siap. Coba refresh.");
-
-            // Referensi Dokumen Siswa (Private Data)
-            // Path: artifacts/{appId}/users/{uid}/exam_data/profile
-            studentDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'exam_data', 'profile');
-
-            await setDoc(studentDocRef, {
-                nama: nama,
-                kelas: kelas,
-                status: 'online', // online, working, cheated, finished
-                warnings: 0,
-                joinedAt: new Date().toISOString()
-            });
-
-            // Write to public presence for Admin to see
-            // Path: artifacts/{appId}/public/data/student_presence/{uid}
-            const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-            await setDoc(publicPresenceRef, {
-                nama: nama,
-                kelas: kelas,
-                status: 'online',
-                warnings: 0,
-                lastActive: new Date().toISOString()
-            });
-
-            // Simpan lokal
-            sessionStorage.setItem('studentName', nama);
-            sessionStorage.setItem('studentClass', kelas);
-            sessionStorage.setItem('examState', 'waiting');
-
-            // Update UI Greeting
-            document.getElementById('student-name-display').innerText = nama;
-            document.getElementById('student-class-display').innerText = kelas;
-            
-            setupStudentListener();
-            showView('waiting');
-        }
-
-        // 2. Listener Waiting Room
-        function setupStudentListener() {
-            // Listener untuk Konfigurasi Ujian (Public Data)
-            // Path FIXED: artifacts/{appId}/public/data/exam_config/settings (6 segments = valid doc path)
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-
-            examConfigUnsubscribe = onSnapshot(configRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const btnStart = document.getElementById('btn-start-exam');
-                    const statusText = document.getElementById('waiting-status');
-
-                    // Cek apakah link PDF untuk kelas siswa ada
-                    const myClass = sessionStorage.getItem('studentClass');
-                    const pdfLink = data.links ? data.links[myClass] : null;
-                    
-                    // Simpan konfigurasi ke session
-                    sessionStorage.setItem('examDuration', data.duration || 90);
-                    if(pdfLink) sessionStorage.setItem('examPdf', pdfLink);
-
-                    if (data.status === 'started') {
-                        statusText.innerText = "Panitia telah memulai ujian!";
-                        statusText.classList.add('text-green-600', 'font-bold');
-                        btnStart.disabled = false;
-                        btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
-                        btnStart.classList.add('animate-bounce');
-                    } else {
-                        statusText.innerText = "Menunggu panitia memulai ujian...";
-                        statusText.classList.remove('text-green-600', 'font-bold');
-                        btnStart.disabled = true;
-                        btnStart.classList.add('opacity-50', 'cursor-not-allowed');
-                        btnStart.classList.remove('animate-bounce');
-                    }
-                }
-            }, (error) => {
-                console.error("Error listening to config:", error);
-            });
-        }
-
-        // 3. Mulai Ujian
-        window.startExam = async () => {
-            const pdfLink = sessionStorage.getItem('examPdf');
-            if (!pdfLink) return alert("Soal untuk kelas Anda belum disetting panitia.");
-
-            // Update status di DB
-            // Update private
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'working' });
-            // Update public presence
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'working' });
-            }
-
-            // Setup PDF
-            document.getElementById('pdf-frame').src = pdfLink;
-            
-            // Setup Header
-            document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
-            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
-
-            // Masuk Fullscreen
-            try {
-                await document.documentElement.requestFullscreen();
-            } catch (err) {
-                console.log("Fullscreen blocked/cancelled");
-            }
-
-            sessionStorage.setItem('examState', 'exam');
-            showView('exam');
-            startTimer(parseInt(sessionStorage.getItem('examDuration')));
-            activateAntiCheat();
-        }
-
-        function resumeExam() {
-            const pdfLink = sessionStorage.getItem('examPdf');
-            if(pdfLink) document.getElementById('pdf-frame').src = pdfLink;
-             document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
-            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
-            showView('exam');
-            activateAntiCheat();
-             startTimer(parseInt(sessionStorage.getItem('examDuration')));
-        }
-
-        // 4. Timer
-        function startTimer(minutes) {
-            let time = minutes * 60;
-            const timerDisplay = document.getElementById('timer-display');
-            
-            if(examInterval) clearInterval(examInterval);
-
-            examInterval = setInterval(() => {
-                const m = Math.floor(time / 60);
-                const s = time % 60;
-                timerDisplay.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-                
-                if (time < 300) timerDisplay.classList.add('text-red-600', 'animate-pulse');
-
-                if (time <= 0) {
-                    clearInterval(examInterval);
-                    finishExam(true);
-                }
-                time--;
-            }, 1000);
-        }
-
-        // 5. Anti-Cheating
-        function activateAntiCheat() {
-            // Prevent Right Click
-            document.addEventListener('contextmenu', event => event.preventDefault());
-            
-            // Prevent Shortcuts
-            document.addEventListener('keydown', (e) => {
-                if(e.ctrlKey && (e.key === 'u' || e.key === 'c' || e.key === 'v')) e.preventDefault();
-                if(e.key === 'F12') e.preventDefault();
-            });
-
-            // Tab Switching / Blur Detection
-            document.addEventListener('visibilitychange', handleViolation);
-            window.addEventListener('blur', handleViolation);
-        }
-
-        function handleViolation() {
-            const state = sessionStorage.getItem('examState');
-            if (state !== 'exam') return;
-
-            if (document.hidden || !document.hasFocus()) {
-                warningCount++;
-                
-                // Update private
-                if(studentDocRef) updateDoc(studentDocRef, { warnings: warningCount });
-                // Update public
-                if(currentUser) {
-                    const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                    updateDoc(publicPresenceRef, { warnings: warningCount });
-                }
-
-                if (warningCount >= 2) {
-                   lockExam();
-                } else {
-                   alert(`PERINGATAN ${warningCount}/2: Dilarang membuka tab lain atau aplikasi lain! Ujian akan terkunci jika Anda melakukan ini lagi.`);
-                   // Paksa fullscreen lagi
-                   document.documentElement.requestFullscreen().catch(()=>{});
-                }
-            }
-        }
-
-        async function lockExam() {
-            if(examInterval) clearInterval(examInterval);
-            
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'cheated' });
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'cheated' });
-            }
-
-            sessionStorage.setItem('examState', 'cheated');
-            showView('cheated');
-            if (document.fullscreenElement) document.exitFullscreen();
-        }
-
-        window.finishExam = async (auto = false) => {
-            if(examInterval) clearInterval(examInterval);
-            
-            if(studentDocRef) updateDoc(studentDocRef, { status: 'finished' });
-            if(currentUser) {
-                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
-                updateDoc(publicPresenceRef, { status: 'finished' });
-            }
-
-            sessionStorage.setItem('examState', 'finished');
-            
-            if(auto) alert("Waktu ujian telah habis.");
-            
-            showView('finished');
-             if (document.fullscreenElement) document.exitFullscreen();
-        }
-
-        // --- LOGIKA ADMIN ---
-
-        window.toggleAdminLogin = () => {
-            showView('adminLogin');
-        }
-
-        window.handleAdminLogin = (e) => {
-            e.preventDefault();
-            const u = document.getElementById('admin-user').value;
-            const p = document.getElementById('admin-pass').value;
-
-            if (u === 'admin ujian' && p === 'smadalawang20517826') {
-                sessionStorage.setItem('examState', 'admin');
-                setupAdminListener();
-                showView('adminPanel');
-            } else {
-                alert("Username atau Password salah!");
-            }
-        }
-
-        async function setupAdminListener() {
-             // Load Current Config
-             // Path FIXED: artifacts/{appId}/public/data/exam_config/settings
-             const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-             
-             try {
-                 const snap = await getDoc(configRef);
-                 if(snap.exists()) {
-                     const d = snap.data();
-                     document.getElementById('admin-duration').value = d.duration || 90;
-                     if(d.links) {
-                         document.getElementById('link-x').value = d.links['X'] || '';
-                         document.getElementById('link-xi').value = d.links['XI'] || '';
-                         document.getElementById('link-xii-ibb').value = d.links['XII IBB'] || '';
-                         document.getElementById('link-xii-iis').value = d.links['XII IIS'] || '';
-                     }
-                     updateAdminStatusUI(d.status);
-                 }
-             } catch (err) {
-                 console.log("Config not found or created yet.");
-             }
-
-             startStudentPresenceListener();
-        }
-        
-        // Admin: Update Config
-        window.saveConfig = async () => {
-            const duration = parseInt(document.getElementById('admin-duration').value);
-            const links = {
-                'X': document.getElementById('link-x').value,
-                'XI': document.getElementById('link-xi').value,
-                'XII IBB': document.getElementById('link-xii-ibb').value,
-                'XII IIS': document.getElementById('link-xii-iis').value
-            };
-            
-            // Path FIXED: artifacts/{appId}/public/data/exam_config/settings
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-            await setDoc(configRef, {
-                duration: duration,
-                links: links,
-                status: 'waiting' // Reset status to waiting on save
-            }, { merge: true });
-            
-            alert("Konfigurasi disimpan!");
-            updateAdminStatusUI('waiting');
-        }
-
-        window.toggleExamStatus = async () => {
-            // Path FIXED: artifacts/{appId}/public/data/exam_config/settings
-            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
-            const currentStatus = document.getElementById('admin-status-indicator').innerText;
-            
-            const newStatus = currentStatus.includes('MENUNGGU') ? 'started' : 'waiting';
-            
-            // Perlu menggunakan setDoc dengan merge jika dokumen belum ada
-            await setDoc(configRef, { status: newStatus }, { merge: true });
-            updateAdminStatusUI(newStatus);
-        }
-
-        function updateAdminStatusUI(status) {
-            const indicator = document.getElementById('admin-status-indicator');
-            const btn = document.getElementById('btn-admin-toggle');
-            
-            if (status === 'started') {
-                indicator.innerText = "SEDANG BERLANGSUNG";
-                indicator.className = "text-green-600 font-bold ml-2";
-                btn.innerText = "Hentikan Ujian";
-                btn.className = "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow";
-            } else {
-                indicator.innerText = "MENUNGGU (Standby)";
-                indicator.className = "text-yellow-600 font-bold ml-2";
-                btn.innerText = "Mulai Ujian Serentak";
-                btn.className = "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow animate-pulse";
-            }
-        }
-
-        function startStudentPresenceListener() {
-            const listContainer = document.getElementById('student-list');
-            // Collection path (5 segments) is VALID for collection()
-            const presenceRef = collection(db, 'artifacts', appId, 'public', 'data', 'student_presence');
-            
-            onSnapshot(presenceRef, (snapshot) => {
-                listContainer.innerHTML = '';
-                if (snapshot.empty) {
-                     listContainer.innerHTML = '<div class="text-center text-gray-400 py-10">Belum ada siswa yang login.</div>';
-                     return;
-                }
-                snapshot.forEach(doc => {
-                    const s = doc.data();
-                    let statusColor = 'text-gray-500';
-                    let statusIcon = 'fa-circle';
-                    
-                    if(s.status === 'working') { statusColor = 'text-blue-500'; statusIcon = 'fa-pen'; }
-                    if(s.status === 'cheated') { statusColor = 'text-red-600'; statusIcon = 'fa-triangle-exclamation'; }
-                    if(s.status === 'finished') { statusColor = 'text-green-600'; statusIcon = 'fa-check'; }
-
-                    const row = `
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded border mb-2">
-                            <div>
-                                <div class="font-bold text-gray-800">${s.nama}</div>
-                                <div class="text-xs text-gray-500">${s.kelas}</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="text-xs text-red-500 font-bold">${s.warnings > 0 ? s.warnings + ' Pelanggaran' : ''}</div>
-                                <div class="${statusColor} flex items-center gap-1">
-                                    <i class="fas ${statusIcon}"></i>
-                                    <span class="text-sm font-medium uppercase">${s.status}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    listContainer.innerHTML += row;
-                });
-            }, (err) => console.log(err));
-        }
-
-    </script>
 
     <style>
         /* Custom Styles */
@@ -486,7 +53,7 @@
                     <p class="text-xs text-green-100">Asesmen Sumatif Akhir Semester Ganjil</p>
                 </div>
             </div>
-            <div onclick="toggleAdminLogin()" class="text-green-200 hover:text-white cursor-pointer text-xs">
+            <div id="btn-panitia" class="text-green-200 hover:text-white cursor-pointer text-xs">
                 <i class="fas fa-lock"></i> Panitia
             </div>
         </div>
@@ -702,5 +269,411 @@
         </div>
 
     </div>
+
+    <!-- SCRIPT (dipindah ke akhir body supaya DOM sudah tersedia) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- KONFIGURASI & LOGIKA APLIKASI ---
+        // Global variables
+        const apiKey = ""; // API Key disediakan oleh environment
+        const firebaseConfig = JSON.parse(localStorage.getItem('firebaseConfig') || '{}'); 
+        const appConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-exam-app';
+
+        const app = initializeApp(appConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let studentDocRef = null;
+        let examConfigUnsubscribe = null;
+        let warningCount = 0;
+        let examInterval = null;
+
+        // --- DOM ELEMENTS ---
+        const views = {
+            login: document.getElementById('view-login'),
+            waiting: document.getElementById('view-waiting'),
+            exam: document.getElementById('view-exam'),
+            cheated: document.getElementById('view-cheated'),
+            adminLogin: document.getElementById('view-admin-login'),
+            adminPanel: document.getElementById('view-admin-panel'),
+            finished: document.getElementById('view-finished')
+        };
+
+        // --- NAVIGASI VIEW ---
+        function showView(viewName) {
+            // safety guard jika elemen belum ada
+            if (!views[viewName]) return;
+            Object.values(views).forEach(el => { if(el) el.classList.add('hidden'); });
+            views[viewName].classList.remove('hidden');
+        }
+
+        // --- AUTHENTICATION ---
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                // Custom token logic if needed
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                console.log("User logged in:", user.uid);
+                // Check if session exists in sessionStorage
+                const savedState = sessionStorage.getItem('examState');
+                if (savedState === 'waiting') {
+                    setupStudentListener();
+                    showView('waiting');
+                } else if (savedState === 'exam') {
+                    resumeExam();
+                } else if (savedState === 'admin') {
+                    setupAdminListener();
+                    showView('adminPanel');
+                }
+            }
+        });
+
+        // --- LOGIKA SISWA ---
+        // 1. Login Siswa
+        window.handleStudentLogin = async (e) => {
+            e.preventDefault();
+            const nama = document.getElementById('input-nama').value;
+            const kelas = document.getElementById('input-kelas').value;
+
+            if (!currentUser) return alert("Koneksi server belum siap. Coba refresh.");
+
+            studentDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'exam_data', 'profile');
+
+            await setDoc(studentDocRef, {
+                nama: nama,
+                kelas: kelas,
+                status: 'online', // online, working, cheated, finished
+                warnings: 0,
+                joinedAt: new Date().toISOString()
+            });
+
+            const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
+            await setDoc(publicPresenceRef, {
+                nama: nama,
+                kelas: kelas,
+                status: 'online',
+                warnings: 0,
+                lastActive: new Date().toISOString()
+            });
+
+            sessionStorage.setItem('studentName', nama);
+            sessionStorage.setItem('studentClass', kelas);
+            sessionStorage.setItem('examState', 'waiting');
+
+            document.getElementById('student-name-display').innerText = nama;
+            document.getElementById('student-class-display').innerText = kelas;
+            
+            setupStudentListener();
+            showView('waiting');
+        }
+
+        // 2. Listener Waiting Room
+        function setupStudentListener() {
+            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
+
+            examConfigUnsubscribe = onSnapshot(configRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const btnStart = document.getElementById('btn-start-exam');
+                    const statusText = document.getElementById('waiting-status');
+
+                    const myClass = sessionStorage.getItem('studentClass');
+                    const pdfLink = data.links ? data.links[myClass] : null;
+
+                    sessionStorage.setItem('examDuration', data.duration || 90);
+                    if(pdfLink) sessionStorage.setItem('examPdf', pdfLink);
+
+                    if (data.status === 'started') {
+                        statusText.innerText = "Panitia telah memulai ujian!";
+                        statusText.classList.add('text-green-600', 'font-bold');
+                        btnStart.disabled = false;
+                        btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btnStart.classList.add('animate-bounce');
+                    } else {
+                        statusText.innerText = "Menunggu panitia memulai ujian...";
+                        statusText.classList.remove('text-green-600', 'font-bold');
+                        btnStart.disabled = true;
+                        btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+                        btnStart.classList.remove('animate-bounce');
+                    }
+                }
+            }, (error) => {
+                console.error("Error listening to config:", error);
+            });
+        }
+
+        // 3. Mulai Ujian
+        window.startExam = async () => {
+            const pdfLink = sessionStorage.getItem('examPdf');
+            if (!pdfLink) return alert("Soal untuk kelas Anda belum disetting panitia.");
+
+            if(studentDocRef) updateDoc(studentDocRef, { status: 'working' });
+            if(currentUser) {
+                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
+                updateDoc(publicPresenceRef, { status: 'working' });
+            }
+
+            document.getElementById('pdf-frame').src = pdfLink;
+            
+            document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
+            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
+
+            try {
+                await document.documentElement.requestFullscreen();
+            } catch (err) {
+                console.log("Fullscreen blocked/cancelled");
+            }
+
+            sessionStorage.setItem('examState', 'exam');
+            showView('exam');
+            startTimer(parseInt(sessionStorage.getItem('examDuration')));
+            activateAntiCheat();
+        }
+
+        function resumeExam() {
+            const pdfLink = sessionStorage.getItem('examPdf');
+            if(pdfLink) document.getElementById('pdf-frame').src = pdfLink;
+             document.getElementById('exam-student-name').innerText = sessionStorage.getItem('studentName');
+            document.getElementById('exam-student-class').innerText = sessionStorage.getItem('studentClass');
+            showView('exam');
+            activateAntiCheat();
+             startTimer(parseInt(sessionStorage.getItem('examDuration')));
+        }
+
+        // 4. Timer
+        function startTimer(minutes) {
+            let time = minutes * 60;
+            const timerDisplay = document.getElementById('timer-display');
+            
+            if(examInterval) clearInterval(examInterval);
+
+            examInterval = setInterval(() => {
+                const m = Math.floor(time / 60);
+                const s = time % 60;
+                timerDisplay.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                
+                if (time < 300) timerDisplay.classList.add('text-red-600', 'animate-pulse');
+
+                if (time <= 0) {
+                    clearInterval(examInterval);
+                    finishExam(true);
+                }
+                time--;
+            }, 1000);
+        }
+
+        // 5. Anti-Cheating
+        function activateAntiCheat() {
+            document.addEventListener('contextmenu', event => event.preventDefault());
+            
+            document.addEventListener('keydown', (e) => {
+                if(e.ctrlKey && (e.key === 'u' || e.key === 'c' || e.key === 'v')) e.preventDefault();
+                if(e.key === 'F12') e.preventDefault();
+            });
+
+            document.addEventListener('visibilitychange', handleViolation);
+            window.addEventListener('blur', handleViolation);
+        }
+
+        function handleViolation() {
+            const state = sessionStorage.getItem('examState');
+            if (state !== 'exam') return;
+
+            if (document.hidden || !document.hasFocus()) {
+                warningCount++;
+                
+                if(studentDocRef) updateDoc(studentDocRef, { warnings: warningCount });
+                if(currentUser) {
+                    const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
+                    updateDoc(publicPresenceRef, { warnings: warningCount });
+                }
+
+                if (warningCount >= 2) {
+                   lockExam();
+                } else {
+                   alert(`PERINGATAN ${warningCount}/2: Dilarang membuka tab lain atau aplikasi lain! Ujian akan terkunci jika Anda melakukan ini lagi.`);
+                   document.documentElement.requestFullscreen().catch(()=>{});
+                }
+            }
+        }
+
+        async function lockExam() {
+            if(examInterval) clearInterval(examInterval);
+            
+            if(studentDocRef) updateDoc(studentDocRef, { status: 'cheated' });
+            if(currentUser) {
+                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
+                updateDoc(publicPresenceRef, { status: 'cheated' });
+            }
+
+            sessionStorage.setItem('examState', 'cheated');
+            showView('cheated');
+            if (document.fullscreenElement) document.exitFullscreen();
+        }
+
+        window.finishExam = async (auto = false) => {
+            if(examInterval) clearInterval(examInterval);
+            
+            if(studentDocRef) updateDoc(studentDocRef, { status: 'finished' });
+            if(currentUser) {
+                const publicPresenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'student_presence', currentUser.uid);
+                updateDoc(publicPresenceRef, { status: 'finished' });
+            }
+
+            sessionStorage.setItem('examState', 'finished');
+            
+            if(auto) alert("Waktu ujian telah habis.");
+            
+            showView('finished');
+             if (document.fullscreenElement) document.exitFullscreen();
+        }
+
+        // --- LOGIKA ADMIN ---
+        // expose toggle function and admin handlers on window
+        window.toggleAdminLogin = () => {
+            showView('adminLogin');
+        }
+
+        window.handleAdminLogin = (e) => {
+            e.preventDefault();
+            const u = document.getElementById('admin-user').value;
+            const p = document.getElementById('admin-pass').value;
+
+            if (u === 'admin ujian' && p === 'smadalawang20517826') {
+                sessionStorage.setItem('examState', 'admin');
+                setupAdminListener();
+                showView('adminPanel');
+            } else {
+                alert("Username atau Password salah!");
+            }
+        }
+
+        async function setupAdminListener() {
+             const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
+             
+             try {
+                 const snap = await getDoc(configRef);
+                 if(snap.exists()) {
+                     const d = snap.data();
+                     document.getElementById('admin-duration').value = d.duration || 90;
+                     if(d.links) {
+                         document.getElementById('link-x').value = d.links['X'] || '';
+                         document.getElementById('link-xi').value = d.links['XI'] || '';
+                         document.getElementById('link-xii-ibb').value = d.links['XII IBB'] || '';
+                         document.getElementById('link-xii-iis').value = d.links['XII IIS'] || '';
+                     }
+                     updateAdminStatusUI(d.status);
+                 }
+             } catch (err) {
+                 console.log("Config not found or created yet.");
+             }
+
+             startStudentPresenceListener();
+        }
+        
+        window.saveConfig = async () => {
+            const duration = parseInt(document.getElementById('admin-duration').value);
+            const links = {
+                'X': document.getElementById('link-x').value,
+                'XI': document.getElementById('link-xi').value,
+                'XII IBB': document.getElementById('link-xii-ibb').value,
+                'XII IIS': document.getElementById('link-xii-iis').value
+            };
+            
+            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
+            await setDoc(configRef, {
+                duration: duration,
+                links: links,
+                status: 'waiting' // Reset status to waiting on save
+            }, { merge: true });
+            
+            alert("Konfigurasi disimpan!");
+            updateAdminStatusUI('waiting');
+        }
+
+        window.toggleExamStatus = async () => {
+            const configRef = doc(db, 'artifacts', appId, 'public', 'data', 'exam_config', 'settings');
+            const currentStatus = document.getElementById('admin-status-indicator').innerText;
+            
+            const newStatus = currentStatus.includes('MENUNGGU') ? 'started' : 'waiting';
+            
+            await setDoc(configRef, { status: newStatus }, { merge: true });
+            updateAdminStatusUI(newStatus);
+        }
+
+        function updateAdminStatusUI(status) {
+            const indicator = document.getElementById('admin-status-indicator');
+            const btn = document.getElementById('btn-admin-toggle');
+            
+            if (status === 'started') {
+                indicator.innerText = "SEDANG BERLANGSUNG";
+                indicator.className = "text-green-600 font-bold ml-2";
+                btn.innerText = "Hentikan Ujian";
+                btn.className = "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded shadow";
+            } else {
+                indicator.innerText = "MENUNGGU (Standby)";
+                indicator.className = "text-yellow-600 font-bold ml-2";
+                btn.innerText = "Mulai Ujian Serentak";
+                btn.className = "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow animate-pulse";
+            }
+        }
+
+        function startStudentPresenceListener() {
+            const listContainer = document.getElementById('student-list');
+            const presenceRef = collection(db, 'artifacts', appId, 'public', 'data', 'student_presence');
+            
+            onSnapshot(presenceRef, (snapshot) => {
+                listContainer.innerHTML = '';
+                if (snapshot.empty) {
+                     listContainer.innerHTML = '<div class="text-center text-gray-400 py-10'>Belum ada siswa yang login.</div>';
+                     return;
+                }
+                snapshot.forEach(doc => {
+                    const s = doc.data();
+                    let statusColor = 'text-gray-500';
+                    let statusIcon = 'fa-circle';
+                    
+                    if(s.status === 'working') { statusColor = 'text-blue-500'; statusIcon = 'fa-pen'; }
+                    if(s.status === 'cheated') { statusColor = 'text-red-600'; statusIcon = 'fa-triangle-exclamation'; }
+                    if(s.status === 'finished') { statusColor = 'text-green-600'; statusIcon = 'fa-check'; }
+
+                    const row = `
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded border mb-2">
+                            <div>
+                                <div class="font-bold text-gray-800">${s.nama}</div>
+                                <div class="text-xs text-gray-500">${s.kelas}</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-xs text-red-500 font-bold">${s.warnings > 0 ? s.warnings + ' Pelanggaran' : ''}</div>
+                                <div class="${statusColor} flex items-center gap-1">
+                                    <i class="fas ${statusIcon}"></i>
+                                    <span class="text-sm font-medium uppercase">${s.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.innerHTML += row;
+                });
+            }, (err) => console.log(err));
+        }
+
+        // attach click handler after DOM is ready
+        const panitiaBtn = document.getElementById('btn-panitia');
+        if (panitiaBtn) panitiaBtn.addEventListener('click', () => window.toggleAdminLogin());
+
+    </script>
 </body>
 </html>
